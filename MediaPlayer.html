@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#000000">
+  
+  <meta name="apple-mobile-web-app-title" content="CoverFlow">
+  <link rel="apple-touch-icon" href="icon.png"> 
+  <link rel="manifest" href="manifest.json">
+  <title>CoverFlow</title>
+<style>
+/* ===== RESET ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000000;
+  font-family: -apple-system, 'SF Pro Text', sans-serif;
+}
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+}
+input {
+  outline: none;
+  font-family: inherit;
+}
+
+/* ===== DESKTOP BG ===== */
+@media screen and (min-width: 900px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #2c2c34 0%, #0e0e12 100%);
+  }
+}
+
+/* ===== PORTRAIT WARNING (Pure Black Fix) ===== */
+#portraitWarn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000 !important;
+  z-index: 99999;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+#portraitWarn svg {
+  opacity: 0.5;
+  animation: tilt 1.8s ease-in-out infinite;
+}
+@keyframes tilt {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+#portraitWarn p {
+  font-size: 13px;
+  color: #666;
+  letter-spacing: 0.3px;
+}
+@media screen and (orientation: portrait) {
+  #portraitWarn { display: flex; }
+}
+
+/* ===== PHONE WRAPPER ===== */
+#phoneWrapper {
+  position: relative;
+  aspect-ratio: 19.5/9;
+  height: min(92vh, calc(92vw * 9 / 19.5));
+  background: #000000;
+  border-radius: 46px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+}
+@media screen and (max-height: 520px) and (orientation: landscape) {
+  body { background: #000000; }
+  #phoneWrapper {
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0;
+    box-shadow: none;
+    aspect-ratio: unset;
+  }
+}
+
+#safeLeft { width: max(env(safe-area-inset-left, 0px), 18px); background: #000000; flex-shrink: 0; }
+#safeRight { width: max(env(safe-area-inset-right, 0px), 8px); background: #000000; flex-shrink: 0; }
+
+/* ===== APP SHELL ===== */
+#appShell {
+  flex: 1;
+  background: #000000; 
+  display: block;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* ===== COVER FLOW STAGE & VIGNETTE ===== */
+.cf-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 1;
+}
+/* Re-applied the Black Edge Vignette */
+.cf-stage::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,1) 100%);
+  pointer-events: none;
+  z-index: 105;
+}
+.cf-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== ZERO-GAP CANVAS REFLECTION ENGINE ===== */
+.cf-album {
+  position: absolute;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.42s cubic-bezier(.25,.8,.25,1), left 0.42s cubic-bezier(.25,.8,.25,1);
+}
+.cf-cover {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+  line-height: 0; 
+  position: relative;
+  z-index: 2;
+}
+.cf-cover canvas {
+  display: block;
+}
+.cf-reflect {
+  position: absolute;
+  top: calc(100% - 1px); /* Pulled up 1px to fix the sub-pixel bleeding line */
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleY(-1);
+  z-index: 1; /* Buried deeply behind everything */
+  border-radius: 8px; /* Added matching bevel */
+  overflow: hidden; /* Clips the inner canvas perfectly to the curve */
+}
+.cf-reflect-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Darkens the actual reflected image to make the main cover art stand out */
+  filter: brightness(0.35); 
+}
+.cf-reflect-fade {
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  /* Double the darkness by stretching the pure black/near-black gradient stops much further down */
+  background: linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ===== CENTER UI: TEXT ===== */
+#centerUI {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 150; /* Highly elevated above reflections */
+  pointer-events: none;
+}
+#cfLabel {
+  text-align: center;
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline; /* Aligns text cleanly along the bottom */
+  justify-content: center;
+  gap: 10px; /* Perfect spacing between title and artist */
+}
+#cfTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,1);
+  margin: 0; 
+}
+#cfArtist {
+  font-size: 14px;
+  font-weight: 500;
+  color: #aaa;
+  text-shadow: 0 2px 10px rgba(0,0,0,1);
+  margin: 0;
+}
+
+/* ===== BOTTOM UI OVERLAY (Permanently Pinned to Bottom) ===== */
+#bottomUIWrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 200;
+  pointer-events: none; 
+  padding-left: max(env(safe-area-inset-left), 12px);
+  padding-right: max(env(safe-area-inset-right), 12px);
+  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+}
+
+#nowPlayingBar {
+  pointer-events: auto; 
+  display: flex;
+  flex-direction: column; 
+  background: transparent;
+  border: none;
+  width: 100%;
+}
+
+/* ===== SCRUBBER (Separated from Text) ===== */
+#npScrubberContainer {
+  position: relative;
+  width: 90%; 
+  max-width: 600px;
+  height: 60px; /* Massive 60px touch area for effortless gliding */
+  display: block;
+  margin: 0 auto 12px auto; /* Centered, pushed above the media controls */
+  pointer-events: auto; 
+}
+.np-track-bg {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); 
+  left: 0;
+  right: 0;
+  height: 4px; 
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  pointer-events: none;
+}
+#npProgressBar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); 
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: #fff;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+#npScrubber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  z-index: 2; 
+  outline: none;
+  touch-action: none;
+  cursor: pointer;
+}
+#npScrubber:focus {
+  outline: none;
+}
+#npScrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 60px; 
+  height: 60px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+#npScrubber::-moz-range-thumb {
+  width: 60px; 
+  height: 60px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ===== BOTTOM ROW (Left, Center, Right Mirror) ===== */
+#npBarBottom { 
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  width: 100%;
+  padding: 0 16px;
+  position: relative; 
+  pointer-events: auto; 
+}
+
+/* Left: Track Info Thumbnail */
+#npInfoWrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1; 
+}
+#npThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+#npThumb canvas {
+  width: 48px;
+  height: 48px;
+  display: block;
+  object-fit: cover;
+}
+#npInfo {
+  flex: 1;
+  min-width: 0;
+}
+#npTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#npArtist {
+  font-size: 13px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Center: Playback Controls */
+#npControls {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -10px);
+  display: flex;
+  align-items: center;
+  gap: 28px; 
+}
+#npPrevBtn, #npNextBtn {
+  width: 44px;
+  height: 44px;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.1s;
+}
+#npPrevBtn svg, #npNextBtn svg {
+  width: 20px;
+  height: 20px;
+}
+#npPrevBtn:active, #npNextBtn:active {
+  opacity: 1;
+}
+#npPlayBtn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+  transition: background 0.1s;
+}
+#npPlayBtn svg {
+  width: 18px;
+  height: 18px;
+}
+#npPlayBtn:active {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Right: Music Library */
+#npLibraryWrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1; 
+}
+#fileViewerBtn {
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  border: none; 
+  transition: transform 0.1s, opacity 0.1s;
+}
+#fileViewerBtn:active {
+  transform: scale(0.96);
+  opacity: 0.7;
+}
+
+/* ===== FILE VIEWER (With Safe Area padding) ===== */
+#fileViewer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  transform: translateY(100%);
+  transition: transform 0.38s cubic-bezier(.32,.72,0,1);
+  border-radius: 12px 12px 0 0;
+  padding-left: max(env(safe-area-inset-left), 12px);
+  padding-right: max(env(safe-area-inset-right), 12px);
+}
+#fileViewer.open {
+  transform: translateY(0);
+}
+#fvHandle {
+  flex-shrink: 0;
+  padding: 8px 0 0;
+  display: flex;
+  justify-content: center;
+}
+#fvHandle span {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #2a2a2a;
+}
+#fvHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  gap: 8px;
+  border-bottom: 0.5px solid #1c1c1c;
+}
+#fvSegments {
+  flex: 1;
+  display: flex;
+  background: #1a1a1a;
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+}
+.fv-seg {
+  flex: 1;
+  padding: 8px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  border-radius: 7px;
+  text-align: center;
+}
+.fv-seg.active {
+  background: #2c2c2e;
+  color: #fff;
+}
+#fvCloseBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 16px;
+}
+#fvImportBar {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  gap: 12px;
+  border-bottom: 0.5px solid #1a1a1a;
+}
+.fv-import-btn, #newAlbumBtn2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #1c1c1e;
+  font-size: 13px;
+  font-weight: 600;
+  border: 0.5px solid #2a2a2a;
+}
+.fv-import-btn { color: #bbb; }
+#newAlbumBtn2 { color: #4a9eff; }
+#fvContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+.fv-tab { display: none; }
+.fv-tab.active { display: block; }
+
+/* SWIPE TO DELETE LOGIC */
+.fv-list-item-wrap { position: relative; overflow: hidden; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+.fv-delete-btn {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer;
+}
+.fv-list-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 16px;
+  cursor: pointer;
+  background: #0d0d0d;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.2s ease-out;
+}
+.fv-list-item.swiped { transform: translateX(-80px); }
+
+.fv-item-art {
+  width: 54px;
+  height: 54px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+.fv-item-art canvas {
+  width: 54px;
+  height: 54px;
+  display: block;
+  object-fit: cover;
+}
+.fv-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.fv-item-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fv-item-sub {
+  font-size: 14px;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* ===== DETAIL VIEW ===== */
+#fvDetail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0d0d0d;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(.32,.72,0,1);
+  display: flex;
+  flex-direction: column;
+  z-index: 310;
+  padding-left: max(env(safe-area-inset-left), 12px);
+  padding-right: max(env(safe-area-inset-right), 12px);
+}
+#fvDetail.open {
+  transform: translateX(0);
+}
+#fvDetailHeader {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 8px;
+  border-bottom: 0.5px solid #1c1c1c;
+}
+#fvBackBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  color: #4a9eff;
+  font-weight: 500;
+}
+#fvDetailTitleBar {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  padding-right: 70px;
+}
+#fvDetailContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 16px;
+}
+.fv-detail-hero {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+  align-items: flex-start;
+}
+.fv-detail-cover-wrap {
+  width: 120px;
+  height: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1a1a;
+  position: relative;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.fv-detail-cover-wrap canvas {
+  width: 120px;
+  height: 120px;
+  display: block;
+  object-fit: cover;
+}
+.fv-detail-info-col {
+  flex: 1;
+  min-width: 0;
+}
+.fv-detail-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.fv-detail-artist {
+  font-size: 16px;
+  color: #888;
+}
+.fv-btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.fv-change-cover-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: #1c1c1e;
+  font-size: 13px;
+  color: #4a9eff;
+  border: 0.5px solid #2a2a2a;
+  font-weight: 600;
+}
+.fv-track-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 8px;
+  gap: 12px;
+  border-radius: 8px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+}
+.fv-track-name {
+  flex: 1;
+  font-size: 16px;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== MODALS ===== */
+.fv-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.fv-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.fv-modal-box {
+  background: #1c1c1e;
+  border-radius: 18px;
+  padding: 24px;
+  width: 280px;
+  border: 0.5px solid #333;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+}
+.fv-modal-box h3 {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 17px;
+}
+.fv-input {
+  width: 100%;
+  background: #111;
+  border: 0.5px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: #fff;
+  margin-bottom: 12px;
+  -webkit-appearance: none;
+}
+.fv-modal-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.fv-modal-btns button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.fv-modal-cancel {
+  background: #2a2a2a;
+  color: #aaa;
+}
+.fv-modal-create {
+  background: #2a5cff;
+  color: #fff;
+}
+
+.fv-pick-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #111;
+  border: 0.5px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.fv-pick-file-row span:first-child {
+  font-size: 14px;
+  color: #888;
+}
+.fv-pick-file-row span:last-child {
+  font-size: 13px;
+  color: #4a9eff;
+}
+
+#toast {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40,40,40,0.96);
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: #ddd;
+  white-space: nowrap;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  border: 0.5px solid rgba(255,255,255,0.1);
+}
+#toast.show {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div id="portraitWarn">
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+    <rect x="4" y="10" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
+    <path d="M28 20 L36 20 M32 15 L36 20 L32 25" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <p>Rotate to landscape</p>
+</div>
+
+<div id="phoneWrapper">
+  <div id="safeLeft"></div>
+  <div id="appShell">
+    
+    <div class="cf-stage" id="cfStage">
+      <div class="cf-track" id="cfTrack"></div>
+    </div>
+
+    <div id="centerUI">
+      <div id="cfLabel">
+        <p id="cfTitle">CoverFlow</p>
+        <p id="cfArtist">Open library to import music</p>
+      </div>
+    </div>
+
+    <div id="bottomUIWrapper">
+      <div id="nowPlayingBar">
+        
+        <div id="npScrubberContainer">
+          <div class="np-track-bg"></div>
+          <div id="npProgressBar"></div>
+          <input type="range" id="npScrubber" min="0" max="100" value="0" step="0.1">
+        </div>
+        
+        <div id="npBarBottom">
+          <div id="npInfoWrap">
+            <div id="npThumb"></div>
+            <div id="npInfo"><div id="npTitle">—</div><div id="npArtist">—</div></div>
+          </div>
+          
+          <div id="npControls">
+            <button id="npPrevBtn"><svg width="16" height="16" viewBox="0 0 14 14"><rect x="1" y="2" width="2" height="10" rx="1" fill="#aaa"/><polygon points="3,7 13,2 13,12" fill="#aaa"/></svg></button>
+            <button id="npPlayBtn"><svg id="npPlayIcon" width="14" height="14" viewBox="0 0 12 12"><polygon points="3,1 11,6 3,11" fill="#fff"/></svg></button>
+            <button id="npNextBtn"><svg width="16" height="16" viewBox="0 0 14 14"><polygon points="1,2 11,7 1,12" fill="#aaa"/><rect x="11" y="2" width="2" height="10" rx="1" fill="#aaa"/></svg></button>
+          </div>
+          
+          <div id="npLibraryWrap">
+             <button id="fileViewerBtn" aria-label="Open Library">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <rect x="0.5" y="2.5" width="14" height="10" rx="1.5" stroke="#fff" stroke-width="1.1"/>
+                <rect x="2.5" y="4.5" width="4" height="6" rx="0.5" fill="#ddd"/>
+                <line x1="8" y1="5.5" x2="12" y2="5.5" stroke="#ddd" stroke-width="1.1" stroke-linecap="round"/>
+                <line x1="8" y1="7.5" x2="12" y2="7.5" stroke="#aaa" stroke-width="1.1" stroke-linecap="round"/>
+              </svg>
+              Music Library
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="fileViewer">
+      <div id="fvHandle"><span></span></div>
+      <div id="fvHeader">
+        <div id="fvSegments">
+          <button class="fv-seg active" data-tab="recent">Recents</button>
+          <button class="fv-seg" data-tab="songs">Songs</button>
+          <button class="fv-seg" data-tab="albums">Albums</button>
+        </div>
+        <button id="fvCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div id="fvImportBar">
+        <button class="fv-import-btn" id="importSongBtn">Import Song</button>
+        <div class="fv-import-spacer"></div>
+        <button id="newAlbumBtn2">New Album</button>
+      </div>
+      <div id="fvContent">
+        <div class="fv-tab active" id="tabRecent"></div>
+        <div class="fv-tab" id="tabSongs"></div>
+        <div class="fv-tab" id="tabAlbums"></div>
+      </div>
+      <div id="fvDetail">
+        <div id="fvDetailHeader">
+          <button id="fvBackBtn">Library</button>
+          <div id="fvDetailTitleBar"></div>
+        </div>
+        <div id="fvDetailContent"></div>
+      </div>
+    </div>
+    
+    <div id="addTrackModal" class="fv-modal">
+      <div class="fv-modal-box">
+        <h3>Add Track</h3>
+        <input class="fv-input" id="trackTitleInput" placeholder="Track title" type="text">
+        <div class="fv-pick-file-row" id="pickAudioRow"><span>Audio file</span><span id="pickAudioLabel">Choose file</span></div>
+        <div class="fv-modal-btns"><button class="fv-modal-cancel" id="addTrackCancel">Cancel</button><button class="fv-modal-create" id="addTrackConfirm">Add</button></div>
+      </div>
+    </div>
+    <div id="newAlbumModal" class="fv-modal">
+      <div class="fv-modal-box">
+        <h3>New Album</h3>
+        <input class="fv-input" id="newAlbumTitle" placeholder="Album title" type="text">
+        <input class="fv-input" id="newAlbumArtist" placeholder="Artist name" type="text">
+        <div class="fv-modal-btns"><button class="fv-modal-cancel" id="albumModalCancel">Cancel</button><button class="fv-modal-create" id="albumModalCreate">Create</button></div>
+      </div>
+    </div>
+    <div id="editModal" class="fv-modal">
+      <div class="fv-modal-box">
+        <h3 id="editModalTitle">Edit Info</h3>
+        <input class="fv-input" id="editTitleInput" placeholder="Title" type="text">
+        <input class="fv-input" id="editArtistInput" placeholder="Artist name" type="text">
+        <div class="fv-modal-btns"><button class="fv-modal-cancel" id="editCancel">Cancel</button><button class="fv-modal-create" id="editConfirm">Save</button></div>
+      </div>
+    </div>
+    
+    <div id="toast"></div>
+  </div><div id="safeRight"></div>
+</div>
+
+<input type="file" id="audioInput" accept=".mp3,.m4a,.wav,.aac,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/aac" style="display:none">
+<input type="file" id="coverInput" accept=".png,.jpg,.jpeg,image/png,image/jpeg" style="display:none">
+<input type="file" id="trackAudioInput" accept=".mp3,.m4a,.wav,.aac,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/aac" style="display:none">
+
+<audio id="audioPlayer" style="display:none"></audio>
+
+<script>
+/* ================================================================
+   DATABASE & STATE
+================================================================ */
+const DB_NAME = 'CoverFlowDB';
+const DB_VER  = 1;
+let db = null;
+let library = [];
+let current = 0;
+let currentlyPlayingId = null;
+let isPlaying = false;
+let BLOBURL_CACHE = {};  
+let currentItemForDetail = null;
+let pendingTrackAlbumId = null;
+let coverChangeTargetId = null;
+let editTargetItem = null;
+let editTargetTrackId = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('blobs')) d.createObjectStore('blobs');
+      if (!d.objectStoreNames.contains('albums')) d.createObjectStore('albums', {keyPath: 'id'});
+    };
+    req.onsuccess = e => { 
+      db = e.target.result; 
+      res(db); 
+    };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbPut(store, key, val) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = store === 'albums' ? tx.objectStore(store).put(val) : tx.objectStore(store).put(val, key);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbGet(store, key) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbDelete(store, key) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function genId() { 
+  return 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36); 
+}
+
+/* ================================================================
+   IMAGE DRAWING & 1:1 CROPPING
+================================================================ */
+function drawPlaceholderCover(size, seed) {
+  const c = document.createElement('canvas');
+  c.width = size; 
+  c.height = size;
+  const ctx = c.getContext('2d');
+  
+  const palettes = [
+    ['#1a1f2e','#2d3a5c'],['#1e1a2e','#3d2d5c'],['#1a2e1e','#2d5c3a'],['#2e1a1a','#5c2d2d'],['#1a2a2e','#2d4a5c'],
+    ['#2e2a1a','#5c4a2d'],['#1e2a1a','#3a5c2d'],['#2e1e2a','#5c2d4a'],['#1a1e2e','#2d3f5c'],['#2e2e1a','#5c5c2d']
+  ];
+  const pal = palettes[(seed || 0) % palettes.length];
+  
+  const bg = ctx.createLinearGradient(0,0,size,size);
+  bg.addColorStop(0, pal[0]); 
+  bg.addColorStop(1, pal[1]);
+  ctx.fillStyle = bg; 
+  ctx.fillRect(0,0,size,size);
+  
+  const noteSize = size * 0.55;
+  ctx.save(); 
+  ctx.font = `bold ${noteSize}px serif`; 
+  ctx.textAlign = 'center'; 
+  ctx.textBaseline = 'middle';
+  const ng = ctx.createLinearGradient(size*0.2,size*0.2,size*0.8,size*0.8);
+  ng.addColorStop(0,'rgba(180,200,225,0.55)'); 
+  ng.addColorStop(1,'rgba(80,100,130,0.3)');
+  ctx.fillStyle = ng; 
+  ctx.fillText('♫', size/2, size*0.52); 
+  ctx.restore();
+  
+  const shine = ctx.createLinearGradient(0,0,size*0.6,size*0.4);
+  shine.addColorStop(0,'rgba(255,255,255,0.06)'); 
+  shine.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = shine; 
+  ctx.fillRect(0,0,size,size);
+  
+  return c;
+}
+
+async function getCoverCanvas(item, size) {
+  if (item.coverId) {
+    const blob = await dbGet('blobs', item.coverId).catch(() => null);
+    if (blob) {
+      const url = BLOBURL_CACHE[item.coverId] || (BLOBURL_CACHE[item.coverId] = URL.createObjectURL(blob));
+      return new Promise(res => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas'); 
+          c.width = size; 
+          c.height = size;
+          const ctx = c.getContext('2d');
+          
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+          res(c);
+        };
+        img.onerror = () => res(drawPlaceholderCover(size, item._slot || 0));
+        img.src = url;
+      });
+    }
+  }
+  return drawPlaceholderCover(size, item._slot || 0);
+}
+
+/* ================================================================
+   COVER FLOW ENGINE
+================================================================ */
+const cfStage = document.getElementById('cfStage');
+const titleEl = document.getElementById('cfTitle');
+const artistEl = document.getElementById('cfArtist');
+let cfNodes = [];
+
+async function buildCoverFlow() {
+  document.getElementById('cfTrack').innerHTML = '';
+  cfNodes = [];
+  const items = library.length > 0 ? library : [{_empty: true, title: 'CoverFlow', artist: 'Open library to import music'}];
+  
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    
+    const wrap = document.createElement('div'); 
+    wrap.className = 'cf-album';
+    
+    wrap.style.opacity = '1.0'; 
+    if(item._empty) wrap.style.opacity = '0.25';
+    
+    // 1. Create Main Cover
+    const coverDiv = document.createElement('div'); 
+    coverDiv.className = 'cf-cover'; 
+    const canvas = await getCoverCanvas(item, 340); 
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    coverDiv.appendChild(canvas);
+    
+    // 2. Create Reflection (Strict Zero Gap Method)
+    const ref = document.createElement('div'); 
+    ref.className = 'cf-reflect'; 
+    const rc = await getCoverCanvas(item, 340); 
+    rc.className = 'cf-reflect-canvas';
+    ref.appendChild(rc);
+    
+    // 3. Gradient Fade Over Reflection
+    const fade = document.createElement('div'); 
+    fade.className = 'cf-reflect-fade'; 
+    ref.appendChild(fade);
+    
+    wrap.appendChild(coverDiv); 
+    wrap.appendChild(ref);
+    
+    wrap.onclick = () => (current === i ? togglePlayCurrentItem() : setCurrent(i));
+    document.getElementById('cfTrack').appendChild(wrap); 
+    cfNodes.push(wrap);
+  }
+  layoutCoverFlow();
+}
+
+function layoutCoverFlow() {
+  const W = cfStage.offsetWidth || window.innerWidth;
+  const H = cfStage.offsetHeight || window.innerHeight;
+  const cx = W / 2;
+  const sz = Math.min(Math.floor(H * 0.52), 310);
+  
+  // Upped the minimum baseTop from 10 to 45 so the album is never high enough to hit the text
+  const baseTop = Math.max(45, Math.floor((H - sz * 1.5) / 2) - 10);
+  const albumTop = baseTop + 15; // Push the album down by 15px
+  
+  cfNodes.forEach((node, i) => {
+    const diff = i - current;
+    const absDiff = Math.abs(diff);
+    const dir = diff > 0 ? 1 : diff < 0 ? -1 : 0;
+    let x, rotY, scale, zIndex, opacity;
+    
+    if (diff === 0) { 
+      x = cx - sz / 2; 
+      rotY = 0; 
+      scale = 1; 
+      zIndex = 100; 
+    } else { 
+      const spread = Math.min(absDiff, 5); 
+      x = cx - sz / 2 + dir * (sz * 0.64 + (spread - 1) * (sz * 0.28)); 
+      rotY = -dir * 68; 
+      scale = Math.max(0.65, 1 - absDiff * 0.08); 
+      zIndex = 100 - absDiff; 
+    }
+    
+    opacity = absDiff > 5 ? 0 : 1;
+    
+    node.style.width = sz + 'px';
+    node.style.height = sz + 'px';
+    
+    node.style.left = x + 'px'; 
+    node.style.top = albumTop + 'px';
+    
+    const cover = node.querySelector('.cf-cover');
+    const reflect = node.querySelector('.cf-reflect');
+    if(cover) {
+        cover.style.width = sz + 'px';
+        cover.style.height = sz + 'px';
+    }
+    if(reflect) {
+        reflect.style.width = sz + 'px';
+        reflect.style.height = sz + 'px';
+    }
+
+    node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${diff === 0 ? 60 : 0}px)`;
+    node.style.zIndex = zIndex; 
+    
+    if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) {
+       node.style.opacity = opacity;
+    }
+  });
+  
+  // Move the label to the top of the screen
+  document.getElementById('cfLabel').style.top = '16px';
+  
+  const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Open library to import music', _empty: true}];
+  const item = items[Math.min(current, items.length - 1)];
+  titleEl.textContent = item.title || (item._empty ? '—' : item.title); 
+  artistEl.textContent = item.artist || (item._empty ? 'Import music to begin' : '');
+}
+
+function setCurrent(i) { 
+  const max = Math.max(0, (library.length > 0 ? library.length : 1) - 1);
+  current = Math.max(0, Math.min(max, i)); 
+  localStorage.setItem('cf_last_index', current); 
+  layoutCoverFlow(); 
+}
+
+/* ================================================================
+   AUDIO PLAYER
+================================================================ */
+const audioEl = document.getElementById('audioPlayer');
+const npScrubber = document.getElementById('npScrubber');
+const npProgressBar = document.getElementById('npProgressBar');
+let isScrubbing = false;
+
+async function playTrack(trackId, trackTitle, albumItem) {
+  const blob = await dbGet('blobs', trackId).catch(() => null); 
+  if (!blob) { 
+    showToast('Audio not found'); 
+    return; 
+  }
+  
+  const url = BLOBURL_CACHE[trackId] || (BLOBURL_CACHE[trackId] = URL.createObjectURL(blob));
+  audioEl.src = url; 
+  audioEl.play().catch(()=>{}); 
+  isPlaying = true; 
+  currentlyPlayingId = trackId;
+  
+  document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
+  document.getElementById('npArtist').textContent = albumItem?.artist || '';
+  
+  document.getElementById('npThumb').innerHTML = ''; 
+  document.getElementById('npThumb').appendChild(await getCoverCanvas(albumItem || {}, 54));
+  
+  updatePlayIcon(); 
+  renderDetailView();
+}
+
+function updatePlayIcon() { 
+  document.getElementById('npPlayIcon').innerHTML = isPlaying ? 
+    '<rect x="2" y="1.5" width="3" height="9" rx="1" fill="#fff"/><rect x="7" y="1.5" width="3" height="9" rx="1" fill="#fff"/>' : 
+    '<polygon points="3,1 11,6 3,11" fill="#fff"/>'; 
+}
+
+audioEl.ontimeupdate = () => { 
+  if (!audioEl.duration) return; 
+  const pct = (audioEl.currentTime / audioEl.duration) * 100; 
+  if (!isScrubbing) {
+    npScrubber.value = pct; 
+    npProgressBar.style.width = pct + '%'; 
+  }
+};
+
+npScrubber.oninput = () => { 
+  isScrubbing = true; 
+  npProgressBar.style.width = npScrubber.value + '%'; 
+};
+
+npScrubber.onchange = () => { 
+  if (audioEl.duration) {
+    audioEl.currentTime = (npScrubber.value / 100) * audioEl.duration; 
+  }
+  isScrubbing = false; 
+};
+
+audioEl.addEventListener('ended', () => { 
+  playNextTrack(); 
+});
+
+document.getElementById('npPlayBtn').onclick = () => { 
+  if (isPlaying) { 
+    audioEl.pause(); 
+    isPlaying = false; 
+  } else { 
+    audioEl.play().catch(()=>{}); 
+    isPlaying = true; 
+  } 
+  updatePlayIcon(); 
+};
+
+/* ===== PREV / NEXT BUTTON LOGIC ===== */
+function findTrackInLibrary(trackId) {
+  for (const item of library) {
+    if (item.type === 'song' && item.audioId === trackId) {
+      return { item, idx: 0 };
+    }
+    if (item.type === 'album' && item.tracks) {
+      const idx = item.tracks.findIndex(t => t.audioId === trackId);
+      if (idx >= 0) return { item, idx };
+    }
+  }
+  return { item: null, idx: -1 };
+}
+
+async function playNextTrack() {
+  if (!currentlyPlayingId) return;
+  const { item, idx } = findTrackInLibrary(currentlyPlayingId);
+  if (!item) return;
+  
+  if (item.type === 'album') {
+     if (idx + 1 < item.tracks.length) {
+        const next = item.tracks[idx + 1];
+        await playTrack(next.audioId, next.title, item);
+        return;
+     }
+  }
+  
+  const itemIdx = library.findIndex(x => x.id === item.id);
+  if (itemIdx >= 0 && itemIdx + 1 < library.length) {
+     const nextItem = library[itemIdx + 1];
+     setCurrent(itemIdx + 1); 
+     if (nextItem.type === 'song') {
+        await playTrack(nextItem.audioId, nextItem.title, nextItem);
+     } else if (nextItem.tracks && nextItem.tracks.length > 0) {
+        await playTrack(nextItem.tracks[0].audioId, nextItem.tracks[0].title, nextItem);
+     }
+  }
+}
+
+async function playPrevTrack() {
+  if (!currentlyPlayingId) return;
+  const { item, idx } = findTrackInLibrary(currentlyPlayingId);
+  if (!item) return;
+  
+  if (item.type === 'album' && idx > 0) {
+     const prev = item.tracks[idx - 1];
+     await playTrack(prev.audioId, prev.title, item);
+     return;
+  }
+  
+  const itemIdx = library.findIndex(x => x.id === item.id);
+  if (itemIdx > 0) {
+     const prevItem = library[itemIdx - 1];
+     setCurrent(itemIdx - 1);
+     if (prevItem.type === 'song') {
+        await playTrack(prevItem.audioId, prevItem.title, prevItem);
+     } else if (prevItem.tracks && prevItem.tracks.length > 0) {
+        await playTrack(prevItem.tracks[prevItem.tracks.length - 1].audioId, prevItem.tracks[prevItem.tracks.length - 1].title, prevItem);
+     }
+  }
+}
+
+document.getElementById('npPrevBtn').addEventListener('click', playPrevTrack);
+document.getElementById('npNextBtn').addEventListener('click', playNextTrack);
+
+async function togglePlayCurrentItem() { 
+  const item = library[current]; 
+  if (!item || item._empty) return; 
+  
+  let belongs = false; 
+  if (item.type === 'song' && item.audioId === currentlyPlayingId) belongs = true; 
+  if (item.type === 'album' && item.tracks && item.tracks.some(t => t.audioId === currentlyPlayingId)) belongs = true; 
+  
+  if (belongs) { 
+    if (isPlaying) { 
+      audioEl.pause(); 
+      isPlaying = false; 
+    } else { 
+      audioEl.play().catch(()=>{}); 
+      isPlaying = true; 
+    } 
+    updatePlayIcon(); 
+  } else { 
+    const tId = item.type === 'song' ? item.audioId : (item.tracks && item.tracks.length > 0 ? item.tracks[0].audioId : null);
+    const tT = item.type === 'song' ? item.title : (item.tracks && item.tracks.length > 0 ? item.tracks[0].title : null); 
+    if (tId) {
+      playTrack(tId, tT, item); 
+    } else {
+      showToast('No audio found in this item');
+    }
+  } 
+}
+
+/* ================================================================
+   FILE VIEWER MENU & SWIPE TO DELETE
+================================================================ */
+document.getElementById('fileViewerBtn').onclick = () => { 
+  document.getElementById('fileViewer').classList.add('open'); 
+  renderAllTabs(); 
+};
+document.getElementById('fvCloseBtn').onclick = () => { 
+  document.getElementById('fileViewer').classList.remove('open'); 
+};
+document.getElementById('fvBackBtn').onclick = () => { 
+  document.getElementById('fvDetail').classList.remove('open'); 
+  currentItemForDetail = null; 
+};
+
+document.querySelectorAll('.fv-seg').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fv-seg').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.fv-tab').forEach(t => t.classList.remove('active'));
+    const map = {recent: 'tabRecent', songs: 'tabSongs', albums: 'tabAlbums'};
+    document.getElementById(map[tab]).classList.add('active');
+  });
+});
+
+async function deleteLibraryItem(id) {
+  library = library.filter(item => item.id !== id);
+  await dbDelete('albums', id);
+  await buildCoverFlow();
+  renderAllTabs();
+  if (currentItemForDetail && currentItemForDetail.id === id) {
+    document.getElementById('fvDetail').classList.remove('open');
+    currentItemForDetail = null;
+  }
+  showToast('Deleted');
+}
+
+async function renderAllTabs() { 
+  await renderTab('tabRecent', [...library].sort((a, b) => b.uploadDate - a.uploadDate)); 
+  await renderTab('tabSongs', library.filter(i => i.type === 'song')); 
+  await renderTab('tabAlbums', library.filter(i => i.type === 'album')); 
+}
+
+async function renderTab(id, items) {
+  const tab = document.getElementById(id); 
+  tab.innerHTML = ''; 
+  if (!items.length) { 
+    return; 
+  }
+  for (const i of items) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fv-list-item-wrap';
+    
+    const delBtn = document.createElement('div');
+    delBtn.className = 'fv-delete-btn';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await deleteLibraryItem(i.id);
+    };
+    wrap.appendChild(delBtn);
+    
+    const r = document.createElement('div'); 
+    r.className = 'fv-list-item'; 
+    const artWrap = document.createElement('div'); 
+    artWrap.className = 'fv-item-art';
+    artWrap.appendChild(await getCoverCanvas(i, 54)); 
+    r.appendChild(artWrap);
+    
+    const inf = document.createElement('div'); 
+    inf.className = 'fv-item-info'; 
+    inf.innerHTML = `<div class="fv-item-title">${i.title}</div><div class="fv-item-sub">${i.artist}</div>`; 
+    r.appendChild(inf);
+    
+    let startX = 0, currentX = 0, isSwiping = false;
+    r.addEventListener('touchstart', e => { 
+      startX = e.touches[0].clientX; 
+      currentX = startX;
+      isSwiping = false;
+    }, {passive: true});
+    
+    r.addEventListener('touchmove', e => {
+      currentX = e.touches[0].clientX;
+      const diff = startX - currentX;
+      if (Math.abs(diff) > 20) isSwiping = true;
+      if (diff > 20) r.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
+      if (diff < -20 && r.classList.contains('swiped')) r.style.transform = `translateX(-${80 - Math.min(-diff, 80)}px)`;
+    }, {passive: true});
+    
+    r.addEventListener('touchend', () => {
+      const diff = startX - currentX;
+      if (diff > 50) { 
+        r.style.transform = '';
+        r.classList.add('swiped');
+      } else if (diff < -40) {
+        r.style.transform = '';
+        r.classList.remove('swiped');
+      } else {
+        r.style.transform = '';
+        if (r.classList.contains('swiped')) r.classList.remove('swiped');
+      }
+    });
+
+    r.onclick = () => { 
+      if(isSwiping) return; 
+      if(r.classList.contains('swiped')) {
+        r.style.transform = '';
+        r.classList.remove('swiped');
+        return;
+      }
+      currentItemForDetail = i; 
+      renderDetailView(); 
+      document.getElementById('fvDetail').classList.add('open'); 
+    }; 
+
+    wrap.appendChild(r);
+    tab.appendChild(wrap);
+  }
+}
+
+async function renderDetailView() {
+  const i = currentItemForDetail; 
+  if (!i) return; 
+  document.getElementById('fvDetailTitleBar').textContent = i.title; 
+  const c = document.getElementById('fvDetailContent'); 
+  c.innerHTML = '';
+  
+  const h = document.createElement('div'); 
+  h.className = 'fv-detail-hero'; 
+  h.innerHTML = `
+    <div class="fv-detail-cover-wrap"></div>
+    <div class="fv-detail-info-col">
+      <div class="fv-detail-name">${i.title}</div>
+      <div class="fv-detail-artist">${i.artist}</div>
+      <div class="fv-btn-group">
+        <button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">Change Cover</button>
+        <button class="fv-change-cover-btn" onclick="openEditModal()">Edit Info</button>
+      </div>
+    </div>
+  `;
+  h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 120)); 
+  c.appendChild(h);
+  
+  if (i.type === 'album') { 
+    i.tracks.forEach(t => { 
+      const tr = document.createElement('div'); 
+      tr.className = 'fv-track-item'; 
+      tr.innerHTML = `<div class="fv-track-name">${t.title}</div>`; 
+      tr.onclick = () => playTrack(t.audioId, t.title, i); 
+      c.appendChild(tr); 
+    }); 
+    const ad = document.createElement('button'); 
+    ad.className = 'fv-change-cover-btn'; 
+    ad.style.marginTop = '10px'; 
+    ad.textContent = '+ Add Track'; 
+    ad.onclick = () => { 
+      pendingTrackAlbumId = i.id; 
+      document.getElementById('addTrackModal').classList.add('open'); 
+    }; 
+    c.appendChild(ad); 
+  } else if (i.audioId) { 
+    const tr = document.createElement('div'); 
+    tr.className = 'fv-track-item'; 
+    tr.innerHTML = `<div class="fv-track-name">Play Song</div>`; 
+    tr.onclick = () => playTrack(i.audioId, i.title, i); 
+    c.appendChild(tr); 
+  }
+}
+
+/* ================================================================
+   DATA EDITING & IMPORTING
+================================================================ */
+function openEditModal() { 
+  editTargetItem = currentItemForDetail; 
+  document.getElementById('editTitleInput').value = editTargetItem.title; 
+  document.getElementById('editArtistInput').value = editTargetItem.artist; 
+  document.getElementById('editModal').classList.add('open'); 
+}
+document.getElementById('editConfirm').onclick = async () => { 
+  editTargetItem.title = document.getElementById('editTitleInput').value; 
+  editTargetItem.artist = document.getElementById('editArtistInput').value; 
+  await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); 
+  document.getElementById('editModal').classList.remove('open'); 
+  renderAllTabs(); 
+  renderDetailView(); 
+  buildCoverFlow(); 
+};
+document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
+
+document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
+document.getElementById('audioInput').onchange = async e => { 
+  const f = e.target.files[0]; 
+  if (!f) return; 
+  showToast('Importing...'); 
+  
+  const id = genId(), bId = genId(); 
+  await dbPut('blobs', bId, f); 
+  
+  const i = {
+    id, type: 'song', 
+    title: f.name.replace(/\.[^.]+$/, ''), 
+    artist: 'Unknown Artist', 
+    coverId: null, 
+    audioId: bId, 
+    uploadDate: Date.now(), 
+    _slot: library.length
+  }; 
+  
+  library.push(i); 
+  await dbPut('albums', id, JSON.parse(JSON.stringify(i))); 
+  await buildCoverFlow(); 
+  setCurrent(library.length - 1); 
+  renderAllTabs(); 
+  showToast('Done ✓'); 
+  e.target.value = '';
+};
+
+document.getElementById('newAlbumBtn2').onclick = () => { 
+  document.getElementById('newAlbumModal').classList.add('open'); 
+};
+document.getElementById('albumModalCreate').onclick = async () => { 
+  const t = document.getElementById('newAlbumTitle').value;
+  const a = document.getElementById('newAlbumArtist').value; 
+  if (!t) return; 
+  
+  const id = genId();
+  const i = {
+    id, 
+    type: 'album', 
+    title: t, 
+    artist: a || 'Unknown Artist', 
+    coverId: null, 
+    tracks: [], 
+    uploadDate: Date.now(), 
+    _slot: library.length
+  }; 
+  
+  library.push(i); 
+  await dbPut('albums', id, JSON.parse(JSON.stringify(i))); 
+  await buildCoverFlow(); 
+  document.getElementById('newAlbumModal').classList.remove('open'); 
+  renderAllTabs(); 
+};
+document.getElementById('albumModalCancel').onclick = () => document.getElementById('newAlbumModal').classList.remove('open');
+
+document.getElementById('pickAudioRow').onclick = () => document.getElementById('trackAudioInput').click();
+document.getElementById('trackAudioInput').onchange = e => { 
+  const f = e.target.files[0]; 
+  if (f) document.getElementById('pickAudioLabel').textContent = f.name; 
+};
+document.getElementById('addTrackConfirm').onclick = async () => { 
+  const t = document.getElementById('trackTitleInput').value;
+  const f = document.getElementById('trackAudioInput').files[0]; 
+  if (!t || !f) return; 
+  
+  const bId = genId(); 
+  await dbPut('blobs', bId, f); 
+  
+  const alb = library.find(x => x.id === pendingTrackAlbumId); 
+  alb.tracks.push({id: genId(), title: t, audioId: bId}); 
+  
+  await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); 
+  document.getElementById('addTrackModal').classList.remove('open'); 
+  renderDetailView(); 
+  document.getElementById('trackAudioInput').value = '';
+};
+document.getElementById('addTrackCancel').onclick = () => document.getElementById('addTrackModal').classList.remove('open');
+
+document.getElementById('coverInput').onchange = async e => { 
+  const f = e.target.files[0]; 
+  if (!f || !coverChangeTargetId) return; 
+  
+  const bId = genId(); 
+  await dbPut('blobs', bId, f); 
+  
+  const i = library.find(x => x.id === coverChangeTargetId); 
+  i.coverId = bId; 
+  
+  await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); 
+  await buildCoverFlow(); 
+  renderAllTabs(); 
+  renderDetailView(); 
+  e.target.value = '';
+};
+
+function showToast(m) { 
+  const t = document.getElementById('toast'); 
+  t.textContent = m; 
+  t.classList.add('show'); 
+  setTimeout(() => t.classList.remove('show'), 2000); 
+}
+
+/* ================================================================
+   INITIALIZATION & TOUCH EVENTS
+================================================================ */
+let touchStartX = 0;
+cfStage.addEventListener('touchstart', e => { 
+  touchStartX = e.touches[0].clientX; 
+}, {passive: true});
+
+cfStage.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1));
+});
+
+let mouseX = 0, dragging = false;
+cfStage.addEventListener('mousedown', e => { 
+  dragging = true; 
+  mouseX = e.clientX; 
+});
+window.addEventListener('mouseup', e => {
+  if (!dragging) return; 
+  dragging = false;
+  const dx = e.clientX - mouseX;
+  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1));
+});
+
+window.addEventListener('resize', () => {
+  clearTimeout(window.resizeTimeout);
+  window.resizeTimeout = setTimeout(layoutCoverFlow, 100);
+});
+
+async function init() { 
+  await openDB(); 
+  const saved = await dbGetAll('albums'); 
+  if (saved) {
+    library = saved.sort((a, b) => a._slot - b._slot); 
+  }
+  current = parseInt(localStorage.getItem('cf_last_index')) || 0; 
+  
+  setTimeout(buildCoverFlow, 150);
+}
+window.onload = init;
+
+// ADDED: Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Offline mode activated!'))
+      .catch(err => console.log('Offline setup failed: ', err));
+  });
+}
+</script>
+</body>
+</html>
