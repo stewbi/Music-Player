@@ -1,8 +1,8 @@
 const CACHE_NAME = 'coverflow-offline-v1';
 const urlsToCache = [
   './',
-  'MediaPlayer.html',
-  'icon.png' // Make sure you have your app icon in the folder!
+  'index.html',
+  'icon.png' 
 ];
 
 self.addEventListener('install', event => {
