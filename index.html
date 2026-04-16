@@ -619,7 +619,7 @@ input {
   align-items: center;
   padding: 14px 16px;
   gap: 8px;
-  border-bottom: 0.5 solid #1c1c1c;
+  border-bottom: 0.5px solid #1c1c1c;
 }
 #fvBackBtn {
   display: flex;
@@ -1228,6 +1228,7 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
+// THE UPDATED playTrack FUNCTION WITH THE FIX
 async function playTrack(trackId, trackTitle, albumItem) {
   const blob = await dbGet('blobs', trackId).catch(() => null); 
   if (!blob) { 
@@ -1241,7 +1242,15 @@ async function playTrack(trackId, trackTitle, albumItem) {
   isPlaying = true; 
   currentlyPlayingId = trackId;
 
-  // STEP 3: INTEGRATE MEDIA SESSION API
+  // 1. FIRST: Generate the canvas and update the global cover URL
+  document.getElementById('npThumb').innerHTML = ''; 
+  document.getElementById('npThumb').appendChild(await getCoverCanvas(albumItem || {}, 54));
+  
+  // 2. Update the in-app text
+  document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
+  document.getElementById('npArtist').textContent = albumItem?.artist || '';
+
+  // 3. SECOND: Now that the cover URL is updated, send it to the Lock Screen
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: trackTitle || 'Unknown Track',
@@ -1266,12 +1275,6 @@ async function playTrack(trackId, trackTitle, albumItem) {
     navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
-  
-  document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
-  document.getElementById('npArtist').textContent = albumItem?.artist || '';
-  
-  document.getElementById('npThumb').innerHTML = ''; 
-  document.getElementById('npThumb').appendChild(await getCoverCanvas(albumItem || {}, 54));
   
   updatePlayIcon(); 
   renderDetailView();
