@@ -619,7 +619,7 @@ input {
   align-items: center;
   padding: 14px 16px;
   gap: 8px;
-  border-bottom: 0.5px solid #1c1c1c;
+  border-bottom: 0.5 solid #1c1c1c;
 }
 #fvBackBtn {
   display: flex;
@@ -962,6 +962,7 @@ let pendingTrackAlbumId = null;
 let coverChangeTargetId = null;
 let editTargetItem = null;
 let editTargetTrackId = null;
+let currentTrackCoverUrl = null; // STEP 1: Global URL variable for Lock Screen metadata
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -1061,11 +1062,16 @@ function drawPlaceholderCover(size, seed) {
   return c;
 }
 
+// STEP 2: MODIFIED getCoverCanvas to store the blob URL for the Media Session metadata
 async function getCoverCanvas(item, size) {
   if (item.coverId) {
     const blob = await dbGet('blobs', item.coverId).catch(() => null);
     if (blob) {
       const url = BLOBURL_CACHE[item.coverId] || (BLOBURL_CACHE[item.coverId] = URL.createObjectURL(blob));
+      
+      // Update global variable for lock screen
+      currentTrackCoverUrl = url;
+
       return new Promise(res => {
         const img = new Image();
         img.onload = () => {
@@ -1086,6 +1092,7 @@ async function getCoverCanvas(item, size) {
       });
     }
   }
+  currentTrackCoverUrl = null;
   return drawPlaceholderCover(size, item._slot || 0);
 }
 
@@ -1233,6 +1240,32 @@ async function playTrack(trackId, trackTitle, albumItem) {
   audioEl.play().catch(()=>{}); 
   isPlaying = true; 
   currentlyPlayingId = trackId;
+
+  // STEP 3: INTEGRATE MEDIA SESSION API
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: trackTitle || 'Unknown Track',
+      artist: albumItem?.artist || 'Unknown Artist',
+      album: albumItem?.title || '',
+      artwork: currentTrackCoverUrl ? [
+        { src: currentTrackCoverUrl, sizes: '512x512', type: 'image/png' },
+      ] : []
+    });
+
+    // Handle Lock Screen controls
+    navigator.mediaSession.setActionHandler('play', () => {
+        audioEl.play().catch(()=>{}); 
+        isPlaying = true;
+        updatePlayIcon();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+        audioEl.pause(); 
+        isPlaying = false;
+        updatePlayIcon();
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
+    navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
+  }
   
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
