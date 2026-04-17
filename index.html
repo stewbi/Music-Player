@@ -814,7 +814,6 @@ function layoutCoverFlow() {
 function setCurrent(i) { 
   const max = Math.max(0, (library.length > 0 ? library.length : 1) - 1);
   current = Math.max(0, Math.min(max, i)); 
-  localStorage.setItem('cf_last_index', current); 
   layoutCoverFlow(); 
 }
 
@@ -826,15 +825,20 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-async function playTrack(trackId, trackTitle, albumItem) {
+async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   const blob = await dbGet('blobs', trackId).catch(() => null); 
   if (!blob) { showToast('Audio not found'); return; }
   
   const url = BLOBURL_CACHE[trackId] || (BLOBURL_CACHE[trackId] = URL.createObjectURL(blob));
   audioEl.src = url; 
-  audioEl.play().catch(()=>{}); 
-  isPlaying = true; 
   currentlyPlayingId = trackId;
+
+  if (autoPlay) {
+    audioEl.play().catch(()=>{}); 
+    isPlaying = true; 
+  } else {
+    isPlaying = false;
+  }
 
   // Update Landscape UI
   document.getElementById('npThumb').innerHTML = ''; 
@@ -896,6 +900,7 @@ npScrubber.onchange = () => {
 audioEl.addEventListener('ended', () => { playNextTrack(); });
 
 document.getElementById('npPlayBtn').onclick = () => { 
+  if (!currentlyPlayingId) return; // Failsafe if completely empty
   if (isPlaying) { audioEl.pause(); isPlaying = false; } else { audioEl.play().catch(()=>{}); isPlaying = true; } 
   updatePlayIcon(); 
 };
@@ -1123,12 +1128,33 @@ async function init() {
   await openDB(); 
   const saved = await dbGetAll('albums'); 
   if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
-  current = parseInt(localStorage.getItem('cf_last_index')) || 0; 
+
+  // Map out all playable tracks inside the library to select one at random
+  const allTracks = [];
+  library.forEach(item => {
+    if (item.type === 'song' && item.audioId) {
+        allTracks.push({ trackId: item.audioId, trackTitle: item.title, albumItem: item });
+    } else if (item.type === 'album' && item.tracks) {
+        item.tracks.forEach(t => {
+            if (t.audioId) allTracks.push({ trackId: t.audioId, trackTitle: t.title, albumItem: item });
+        });
+    }
+  });
+
+  // Load a random track to bypass the empty start screen (if tracks exist)
+  if (allTracks.length > 0) {
+    const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
+    // Make sure Cover Flow's current position matches the selected track's album
+    current = Math.max(0, library.findIndex(x => x.id === randomTrack.albumItem.id));
+    // Load it into the UI silently without auto-playing
+    await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.albumItem, false);
+  } else {
+    // True fresh start (library is completely empty)
+    current = 0;
+    document.getElementById('portCanvasContainer').appendChild(drawPlaceholderCover(340, 0));
+  }
   
   setTimeout(buildCoverFlow, 150);
-
-  // Initialize placeholder canvas for portrait view
-  document.getElementById('portCanvasContainer').appendChild(drawPlaceholderCover(340, 0));
 
   // Handle the fade-out on startup
   setTimeout(() => {
