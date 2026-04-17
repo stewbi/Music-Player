@@ -280,20 +280,22 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Hide Landscape elements */
-  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap { 
+  /* Hide Landscape elements AND the file viewer entirely */
+  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap, #fileViewer { 
     display: none !important; 
   }
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
 
-  /* Display Portrait elements */
+  /* Display Portrait elements with proper spacing constraints */
   #portView {
     display: flex;
     flex-direction: column;
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 100;
+    /* Accounts for the absolute bottom UI to perfectly center the remaining space */
+    padding-bottom: 160px; 
   }
 
   #portTopText {
@@ -312,22 +314,17 @@ input {
     align-items: center;
     justify-content: center;
     padding: 0 20px;
-    /* Accounts for the absolute bottom UI to keep the cover properly centered in the available space */
-    padding-bottom: 180px; 
   }
   
   /* Generates the sleek glass reflection underneath the cover art */
   .port-canvas-container {
-    /* Scales dynamically based on available height to exactly hit the red lines without overflowing */
-    width: min(80vw, calc((100vh - 340px) / 2)); 
-    max-width: 400px;
+    width: min(75vw, 340px); 
     aspect-ratio: 1/1;
     box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.75, transparent), to(rgba(255,255,255,0.4)));
+    /* Brighter vertical-mode reflection */
+    -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
     border-radius: 4px;
     background: #1a1a1a;
-    /* Shifts the cover up by half its height to perfectly center the full (Cover + Reflection) object */
-    transform: translateY(-50%); 
   }
   .port-canvas-container canvas {
     width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
@@ -1102,12 +1099,24 @@ function showToast(m) { const t = document.getElementById('toast'); t.textConten
 /* ================================================================
    INITIALIZATION & TOUCH EVENTS
 ================================================================ */
+// COVERFLOW SWIPE (LANDSCAPE)
 let touchStartX = 0;
 cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
 cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
 let mouseX = 0, dragging = false;
 cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
 window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
+
+// VERTICAL ALBUM ART SWIPE (PORTRAIT)
+const portCoverWrap = document.getElementById('portCoverWrap');
+let portSwipeStartX = 0;
+portCoverWrap.addEventListener('touchstart', e => { portSwipeStartX = e.touches[0].clientX; }, {passive: true});
+portCoverWrap.addEventListener('touchend', e => { 
+  const dx = e.changedTouches[0].clientX - portSwipeStartX; 
+  if (dx > 40) playPrevTrack(); 
+  else if (dx < -40) playNextTrack(); 
+});
+
 window.addEventListener('resize', () => { clearTimeout(window.resizeTimeout); window.resizeTimeout = setTimeout(layoutCoverFlow, 100); });
 
 async function init() { 
