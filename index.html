@@ -401,8 +401,8 @@ input {
 
   /* Library Content Fade (Portrait Only) */
   #fvContent, #fvDetailContent {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 80px), transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 80px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 140px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 140px), transparent 100%);
   }
 }
 
@@ -441,7 +441,7 @@ input {
   #fvHeader { min-height: 64px; }
   .glass-close-btn { 
      top: 10px; /* Moved up to float nicely */
-     right: 16px; /* Shifted to avoid Albums button */
+     right: 6px; /* Shifted significantly to avoid Albums button */
      transform: none; 
   }
 }
@@ -453,6 +453,7 @@ input {
 #fvContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
   -ms-overflow-style: none; scrollbar-width: none;
+  padding-bottom: max(140px, env(safe-area-inset-bottom, 20px) + 100px); /* Massive clearance to clear the fade mask entirely */
 }
 #fvContent::-webkit-scrollbar { display: none; }
 .fv-tab { display: none; }
@@ -495,7 +496,7 @@ input {
 
 #fvDetailContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; 
-  padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
+  padding: 18px 20px max(140px, env(safe-area-inset-bottom) + 100px) 20px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 #fvDetailContent::-webkit-scrollbar { display: none; }
@@ -575,8 +576,11 @@ input {
   }
   .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; flex-shrink: 0; }
   .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
-  .fv-song-layout .fv-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
-  .fv-song-layout .fv-detail-artist { font-size: 18px; color: #888; margin-bottom: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
+  
+  /* Text Wrapping applied here */
+  .fv-song-layout .fv-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; white-space: normal; word-wrap: break-word; line-height: 1.25; width: 100%; text-align: left; }
+  .fv-song-layout .fv-detail-artist { font-size: 18px; color: #888; margin-bottom: 24px; white-space: normal; word-wrap: break-word; line-height: 1.25; width: 100%; text-align: left; }
+  
   .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; margin-bottom: 24px; }
 }
 
@@ -1010,7 +1014,9 @@ function layoutCoverFlow() {
     if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) { node.style.opacity = opacity; }
   });
   
-  document.getElementById('cfLabel').style.top = '16px';
+  // Dynamically center the text between the screen top and album art top
+  document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
+  
   const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Open library to import music', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
   
@@ -1353,7 +1359,7 @@ document.getElementById('audioInput').onchange = async e => {
   const f = e.target.files[0]; if (!f) return; showToast('Importing...'); 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
   const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: library.length, size: f.size }; 
-  library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); showToast('Done ✓'); e.target.value = '';
+  library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); e.target.value = '';
 };
 document.getElementById('newAlbumBtn2').onclick = () => { document.getElementById('newAlbumModal').classList.add('open'); };
 document.getElementById('albumModalCreate').onclick = async () => { 
