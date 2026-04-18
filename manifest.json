@@ -1,6 +1,6 @@
 {
   "name": "CoverFlow",
-  "short_name": "CoverFlow",
+  "short_name": "Music",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
