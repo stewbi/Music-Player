@@ -401,8 +401,8 @@ input {
 
   /* Library Content Fade (Portrait Only) */
   #fvContent, #fvDetailContent {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 140px), transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 140px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 90px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 90px), transparent 100%);
   }
 }
 
@@ -440,8 +440,8 @@ input {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
   #fvHeader { min-height: 64px; }
   .glass-close-btn { 
-     top: 10px; /* Moved up to float nicely */
-     right: 6px; /* Shifted significantly to avoid Albums button */
+     top: 10px; 
+     right: 8px; /* Balanced perfectly between Albums and screen edge */
      transform: none; 
   }
 }
@@ -453,7 +453,7 @@ input {
 #fvContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
   -ms-overflow-style: none; scrollbar-width: none;
-  padding-bottom: max(140px, env(safe-area-inset-bottom, 20px) + 100px); /* Massive clearance to clear the fade mask entirely */
+  padding-bottom: 90px; /* Reduced to safely wrap Home Indicator and maintain fade overlay */
 }
 #fvContent::-webkit-scrollbar { display: none; }
 .fv-tab { display: none; }
@@ -496,7 +496,7 @@ input {
 
 #fvDetailContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; 
-  padding: 18px 20px max(140px, env(safe-area-inset-bottom) + 100px) 20px;
+  padding: 18px 20px 90px 20px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 #fvDetailContent::-webkit-scrollbar { display: none; }
@@ -620,14 +620,14 @@ input {
     <div id="centerUI">
       <div id="cfLabel">
         <p id="cfTitle">CoverFlow</p>
-        <p id="cfArtist">Open library to import music</p>
+        <p id="cfArtist">Add music to Music Library</p>
       </div>
     </div>
 
     <div id="portView">
       <div id="portTopText">
          <div id="portTitleWrap"><div id="portTitle" class="marquee-text">—</div></div>
-         <div id="portArtistWrap"><div id="portArtist" class="marquee-text">Rotate to open Library</div></div>
+         <div id="portArtistWrap"><div id="portArtist" class="marquee-text">Add music to Music Library</div></div>
       </div>
       <button id="portLibraryBtn" aria-label="Open Library">
          <svg width="24" height="24" viewBox="0 0 15 15" fill="none">
@@ -869,7 +869,7 @@ function drawPlaceholderCover(size, seed) {
 }
 
 async function getCoverCanvas(item, size) {
-  if (item.coverId) {
+  if (item && item.coverId) {
     const blob = await dbGet('blobs', item.coverId).catch(() => null);
     if (blob) {
       const url = BLOBURL_CACHE[item.coverId] || (BLOBURL_CACHE[item.coverId] = URL.createObjectURL(blob));
@@ -918,7 +918,7 @@ async function getCoverCanvas(item, size) {
     }
   }
   currentTrackCoverUrl = null;
-  return drawPlaceholderCover(size, item._slot || 0);
+  return drawPlaceholderCover(size, item ? item._slot || 0 : 0);
 }
 
 /* ================================================================
@@ -932,7 +932,7 @@ let cfNodes = [];
 async function buildCoverFlow() {
   document.getElementById('cfTrack').innerHTML = '';
   cfNodes = [];
-  const items = library.length > 0 ? library : [{_empty: true, title: 'CoverFlow', artist: 'Open library to import music'}];
+  const items = library.length > 0 ? library : [{_empty: true, title: 'CoverFlow', artist: 'Add music to Music Library'}];
   
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -1017,11 +1017,33 @@ function layoutCoverFlow() {
   // Dynamically center the text between the screen top and album art top
   document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
   
-  const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Open library to import music', _empty: true}];
+  const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Add music to Music Library', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
   
-  titleEl.textContent = item.title || (item._empty ? '—' : item.title); 
-  artistEl.textContent = item.artist || (item._empty ? 'Import music to begin' : '');
+  const tText = item.title || (item._empty ? '—' : item.title);
+  const aText = item.artist || (item._empty ? 'Add music to Music Library' : '');
+  
+  titleEl.textContent = tText; 
+  artistEl.textContent = aText;
+
+  // Sync portrait top text to the currently centered CoverFlow item
+  const pt = document.getElementById('portTitle');
+  const pa = document.getElementById('portArtist');
+  if (pt) pt.textContent = tText;
+  if (pa) pa.textContent = aText;
+
+  // Sync portrait cover art to the currently centered CoverFlow item
+  getCoverCanvas(item, 340).then(c => {
+     // Check to make sure we haven't quickly swiped past this item before updating
+     if (item === items[Math.min(current, items.length - 1)]) {
+         const pcc = document.getElementById('portCanvasContainer');
+         if(pcc) { pcc.innerHTML = ''; pcc.appendChild(c); }
+     }
+  });
+  
+  // Dynamic Marquee evaluation
+  setTimeout(evaluateMarqueeCenter, 50);
+  setTimeout(evaluateMarqueeNP, 50);
 }
 
 function setCurrent(i) { 
@@ -1102,14 +1124,12 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
-  document.getElementById('portTitle').textContent = trackTitle || 'Unknown Track';
-  document.getElementById('portArtist').textContent = albumItem?.artist || '';
+  
+  // NOTE: Portrait mode text and canvas are now kept synced to Cover Flow `current` via `layoutCoverFlow()`
+  // They are NO LONGER forcibly overwritten here to allow independent Cover Flow browsing while playing.
   
   // Calculate text bleed / marquee
   setTimeout(evaluateMarqueeNP, 50);
-
-  document.getElementById('portCanvasContainer').innerHTML = '';
-  document.getElementById('portCanvasContainer').appendChild(await getCoverCanvas(albumItem || {}, 340));
 
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -1355,8 +1375,9 @@ document.getElementById('editConfirm').onclick = async () => {
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
 document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
 
+// Upload without the Done notification, auto-syncing Cover Flow and portrait UI
 document.getElementById('audioInput').onchange = async e => { 
-  const f = e.target.files[0]; if (!f) return; showToast('Importing...'); 
+  const f = e.target.files[0]; if (!f) return; 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
   const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: library.length, size: f.size }; 
   library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); e.target.value = '';
@@ -1391,27 +1412,46 @@ document.getElementById('coverInput').onchange = async e => {
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS
+   INITIALIZATION & TOUCH EVENTS (VELOCITY PHYSICS)
 ================================================================ */
+let swipeStartX = 0, lastSwipeX = 0, lastSwipeTime = 0, swipeVelocity = 0, isSwipingStage = false;
 
-// Original short-swipe CoverFlow Logic (Landscape)
-let touchStartX = 0;
-cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
-cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
+function handleSwipeStart(x) {
+  swipeStartX = x; lastSwipeX = x; lastSwipeTime = Date.now(); isSwipingStage = true;
+}
 
-let mouseX = 0, dragging = false;
-cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
-window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
+function handleSwipeMove(x) {
+  if (!isSwipingStage) return;
+  const now = Date.now(); const dt = now - lastSwipeTime;
+  if (dt > 0) { swipeVelocity = (x - lastSwipeX) / dt; }
+  lastSwipeX = x; lastSwipeTime = now;
+}
 
-// Original Vertical Art Swipe (Portrait)
-const portCoverWrap = document.getElementById('portCoverWrap');
-let portSwipeStartX = 0;
-portCoverWrap.addEventListener('touchstart', e => { portSwipeStartX = e.touches[0].clientX; }, {passive: true});
-portCoverWrap.addEventListener('touchend', e => { 
-  const dx = e.changedTouches[0].clientX - portSwipeStartX; 
-  if (dx > 40) playPrevTrack(); 
-  else if (dx < -40) playNextTrack(); 
-});
+function handleSwipeEnd(x) {
+  if (!isSwipingStage) return;
+  isSwipingStage = false;
+  const dx = x - swipeStartX; const absDx = Math.abs(dx); const absVel = Math.abs(swipeVelocity);
+
+  if (absDx > 20) {
+    let skip = 1;
+    if (absVel > 0.35) { 
+      skip = Math.max(1, Math.round(absVel * 3.8)); 
+    } 
+    else if (absDx > 150) { 
+      skip = Math.max(1, Math.round(absDx / 70)); 
+    } 
+    const dir = dx < 0 ? 1 : -1;
+    setCurrent(current + (dir * skip));
+  }
+  swipeVelocity = 0;
+}
+
+cfStage.addEventListener('touchstart', e => handleSwipeStart(e.touches[0].clientX), {passive: true});
+cfStage.addEventListener('touchmove', e => handleSwipeMove(e.touches[0].clientX), {passive: true});
+cfStage.addEventListener('touchend', e => handleSwipeEnd(e.changedTouches[0].clientX));
+cfStage.addEventListener('mousedown', e => { handleSwipeStart(e.clientX); });
+window.addEventListener('mousemove', e => { if (isSwipingStage) handleSwipeMove(e.clientX); });
+window.addEventListener('mouseup', e => { if (isSwipingStage) handleSwipeEnd(e.clientX); });
 
 
 window.addEventListener('resize', () => { 
@@ -1419,52 +1459,30 @@ window.addEventListener('resize', () => {
   window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(); }, 100); 
 });
 
-
-// Initialization logic
 async function init() { 
-  // Standard initialization logic.
-  setTimeout(() => {
-    const fadeScreen = document.getElementById('startupFade');
-    if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
-  }, 100);
-
-  try {
-    await openDB(); 
-    const saved = await dbGetAll('albums'); 
-    if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
-  } catch (e) {
-    library = [];
-  }
-
+  await openDB(); 
+  const saved = await dbGetAll('albums'); 
+  if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
   const allTracks = [];
   library.forEach(item => {
     if (item.type === 'song' && item.audioId) { allTracks.push({ trackId: item.audioId, trackTitle: item.title, albumItem: item }); } 
     else if (item.type === 'album' && item.tracks) { item.tracks.forEach(t => { if (t.audioId) allTracks.push({ trackId: t.audioId, trackTitle: t.title, albumItem: item }); }); }
   });
-
   if (allTracks.length > 0) {
     const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
     current = Math.max(0, library.findIndex(x => x.id === randomTrack.albumItem.id));
     await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.albumItem, false);
   } else {
     current = 0;
-    document.getElementById('portCanvasContainer').appendChild(drawPlaceholderCover(340, 0));
   }
-
   setTimeout(buildCoverFlow, 150);
+  setTimeout(() => {
+    const fadeScreen = document.getElementById('startupFade');
+    if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
+  }, 100);
 }
-
-// iOS PWA state check for onload event.
-if (document.readyState !== 'loading') {
-  init();
-} else {
-  document.addEventListener('DOMContentLoaded', init);
-}
-
-// Service Worker register.
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); 
-}
+window.onload = init;
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); }); }
 </script>
 </body>
 </html>
