@@ -192,6 +192,16 @@ input {
   88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
 }
 
+/* Dynamic Mask Class activated only when text is scrolling */
+.needs-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+}
+#portTitleWrap.needs-mask, #portArtistWrap.needs-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
+}
+
 /* ===== PORTRAIT SPECIFIC VIEW ===== */
 #portView {
   display: none;
@@ -263,8 +273,6 @@ input {
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
 #npInfo { 
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
 }
 .marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; }
 
@@ -323,22 +331,21 @@ input {
     padding-top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
     text-align: center;
     flex: 0 0 auto;
-    padding-left: 20px; padding-right: 20px;
     pointer-events: auto;
     overflow: hidden;
   }
   
   /* Portrait Threshold Boundary Constraints */
+  #portTitleWrap, #portArtistWrap {
+    max-width: calc(100vw - 120px);
+    margin: 0 auto;
+  }
   #portTitleWrap {
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
     overflow: visible; display: flex; align-items: center; justify-content: center;
   }
-
   #portArtistWrap {
     display: block;
-    margin: 0 auto;
-    padding: 0 20px;
+    text-align: center;
   }
   
   #portLibraryBtn {
@@ -357,7 +364,7 @@ input {
   /* Dynamic Title */
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
   /* Static Artist */
-  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
   .port-canvas-container {
     width: min(75vw, 340px); 
@@ -391,6 +398,12 @@ input {
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
+
+  /* Library Content Fade (Portrait Only) */
+  #fvContent, #fvDetailContent {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 80px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 80px), transparent 100%);
+  }
 }
 
 
@@ -404,8 +417,7 @@ input {
   overflow-x: hidden; /* Locks horizontal scroll */
 }
 #fileViewer.open { transform: translateY(0); }
-#fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
-#fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
+#fvHandle { display: none; } /* Removed to fix grey line */
 
 /* Sleek Header & Segment Controls: Perfect centering logic */
 #fvHeader, #fvDetailHeader { 
@@ -426,15 +438,23 @@ input {
 /* Updated Portrait safe area for file viewer header */
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
-  #fvHeader { min-height: 74px; }
-  .glass-close-btn { top: 60%; }
+  #fvHeader { min-height: 64px; }
+  .glass-close-btn { 
+     top: 10px; /* Moved up to float nicely */
+     right: 16px; /* Shifted to avoid Albums button */
+     transform: none; 
+  }
 }
 
 /* Import/New Buttons Bar */
 #fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; }
 .fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #1c1c1e; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; color: #fff; }
 
-#fvContent { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; }
+#fvContent { 
+  flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+#fvContent::-webkit-scrollbar { display: none; }
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
@@ -456,8 +476,13 @@ input {
 /* Updated Portrait safe area for detail header and back button position */
 @media screen and (orientation: portrait) {
   #fvDetail { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
-  #fvDetailHeader { min-height: 74px; }
+  #fvDetailHeader { min-height: 64px; }
   #fvDetailTitleBar { display: none !important;}
+  #fvBackBtn { 
+     top: 10px; 
+     left: 16px; 
+     transform: none; 
+  }
 }
 
 /* "Back" button unified with absolute close button height and perfectly centered vertically */
@@ -469,13 +494,11 @@ input {
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 #fvDetailContent { 
-  flex: 1; 
-  overflow-y: auto; 
-  overflow-x: hidden; 
-  -webkit-overflow-scrolling: touch; 
-  display: flex; flex-direction: column; align-items: center; 
+  flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; 
   padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
+  -ms-overflow-style: none; scrollbar-width: none;
 }
+#fvDetailContent::-webkit-scrollbar { display: none; }
 
 /* Legacy Detail View for Albums */
 .fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
@@ -600,7 +623,7 @@ input {
     <div id="portView">
       <div id="portTopText">
          <div id="portTitleWrap"><div id="portTitle" class="marquee-text">—</div></div>
-         <div id="portArtistWrap"><p id="portArtist">Rotate to open Library</p></div>
+         <div id="portArtistWrap"><div id="portArtist" class="marquee-text">Rotate to open Library</div></div>
       </div>
       <button id="portLibraryBtn" aria-label="Open Library">
          <svg width="24" height="24" viewBox="0 0 15 15" fill="none">
@@ -800,7 +823,7 @@ function genId() {
 }
 
 /* ================================================================
-   IMAGE DRAWING & 1:1 CROPPING
+   IMAGE DRAWING & 1:1 CROPPING (STEP-DOWN QUALITY FIX)
 ================================================================ */
 function drawPlaceholderCover(size, seed) {
   const c = document.createElement('canvas');
@@ -851,17 +874,39 @@ async function getCoverCanvas(item, size) {
       return new Promise(res => {
         const img = new Image();
         img.onload = () => {
-          const c = document.createElement('canvas'); 
-          c.width = size; 
-          c.height = size;
-          const ctx = c.getContext('2d');
-          
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
           
-          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-          res(c);
+          // Initial crop to square
+          let currentCanvas = document.createElement('canvas');
+          currentCanvas.width = minDim;
+          currentCanvas.height = minDim;
+          let cCtx = currentCanvas.getContext('2d');
+          cCtx.drawImage(img, sx, sy, minDim, minDim, 0, 0, minDim, minDim);
+
+          // Iterative step-down halving for smooth quality
+          while (currentCanvas.width * 0.5 >= size) {
+            let nextCanvas = document.createElement('canvas');
+            nextCanvas.width = currentCanvas.width * 0.5;
+            nextCanvas.height = currentCanvas.height * 0.5;
+            let nCtx = nextCanvas.getContext('2d');
+            nCtx.imageSmoothingEnabled = true;
+            nCtx.imageSmoothingQuality = 'high';
+            nCtx.drawImage(currentCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+            currentCanvas = nextCanvas;
+          }
+
+          // Final exact draw to requested target size
+          const finalCanvas = document.createElement('canvas');
+          finalCanvas.width = size;
+          finalCanvas.height = size;
+          const fCtx = finalCanvas.getContext('2d');
+          fCtx.imageSmoothingEnabled = true;
+          fCtx.imageSmoothingQuality = 'high';
+          fCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, size, size);
+
+          res(finalCanvas);
         };
         img.onerror = () => res(drawPlaceholderCover(size, item._slot || 0));
         img.src = url;
@@ -980,24 +1025,37 @@ function setCurrent(i) {
 }
 
 /* ================================================================
-   AUDIO PLAYER & MARQUEE EVALUATION
+   AUDIO PLAYER & DYNAMIC MARQUEE EVALUATION
 ================================================================ */
 const audioEl = document.getElementById('audioPlayer');
 const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-// Shared evaluation logic for marquee effects
+// Shared evaluation logic for marquee effects and dynamic mask triggering
 function _evaluateMarqueeInternal(ids) {
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('scroll');
     el.style.transform = 'none';
-    const parent = el.parentElement; // Expected to be .marquee-wrap
-    if (el.scrollWidth > parent.clientWidth) {
-      el.style.setProperty('--mw', parent.clientWidth + 'px');
-      el.classList.add('scroll');
+    const parent = el.parentElement;
+    
+    // Only remove/add needs-mask logic for our specific wrappers
+    if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
+        parent.classList.remove('needs-mask');
+        
+        if (el.scrollWidth > parent.clientWidth) {
+          el.style.setProperty('--mw', parent.clientWidth + 'px');
+          el.classList.add('scroll');
+          parent.classList.add('needs-mask'); // Apply mask dynamically
+        }
+    } else {
+        // Fallback for elements without explicit wrapper targeting (like cfTitle)
+        if (el.scrollWidth > parent.clientWidth) {
+          el.style.setProperty('--mw', parent.clientWidth + 'px');
+          el.classList.add('scroll');
+        }
     }
   });
 }
@@ -1012,11 +1070,15 @@ function evaluateMarqueeNP() {
     if (!el) return;
     el.classList.remove('scroll');
     el.style.transform = 'none';
+    
     const parent = el.parentElement;
-    if (el.scrollWidth > parent.clientWidth) {
-      // Create permanent face mask effect when scrolling is active
-      el.style.setProperty('--mw', parent.clientWidth + 'px');
-      el.classList.add('scroll');
+    if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
+        parent.classList.remove('needs-mask');
+        if (el.scrollWidth > parent.clientWidth) {
+          el.style.setProperty('--mw', parent.clientWidth + 'px');
+          el.classList.add('scroll');
+          parent.classList.add('needs-mask');
+        }
     }
   });
 }
