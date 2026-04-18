@@ -495,6 +495,137 @@ input {
   .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
   .fv-detail-info-col { text-align: center;}
   .fv-btn-group { justify-content: center; flex-direction: row; }
+
+  /* UPDATED Layout: ONLY applied to Landscape view for songs */
+  #fvDetailContent:not(:has(.fv-tracks-list)) {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 max(env(safe-area-inset-left, 0px), 18px) 0 max(env(safe-area-inset-right, 0px), 18px); /* Full use of safe areas */
+    justify-content: center; /* Center the two columns */
+    gap: max(env(safe-area-inset-left, 0px), 18px); /* Use a larger gap that integrates safe area */
+  }
+
+  /* Bigger buttons */
+  #fvBackBtn {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 20px;
+  }
+  #fvCloseBtn, #fvDetailCloseBtn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  /* Remove song title text from top */
+  #fvDetailTitleBar {
+    display: none;
+  }
+
+  /* Left Column: Larger and cleaner cover art preview */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-hero {
+    flex: 1 1 50%;
+    align-items: flex-start; /* Correct alignment for the split view */
+    margin: 0;
+    justify-content: center; /* Center cover within its column */
+  }
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap {
+    width: min(85%, 340px); /* Fill most of column but cap for size */
+    height: min(85%, 340px);
+    border-radius: 12px;
+    display: block; /* Use drawPlaceholderCover/getCoverCanvas with larger size in JS */
+  }
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap canvas {
+    width: 100% !important; height: 100% !important; /* Ensure canvas fills container */
+    object-fit: contain;
+  }
+
+  /* Right Column: Information, buttons, and display */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-info-col {
+    flex: 1 1 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Left-align all content */
+    padding-left: 20px;
+    text-align: left; /* Left-align title/artist text */
+  }
+
+  /* Larger title/artist text on the right */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-name {
+    font-size: 26px; /* Bigger */
+    margin-bottom: 4px;
+  }
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-artist {
+    font-size: 18px; /* Bigger */
+    margin-bottom: 24px; /* More spacing */
+  }
+
+  /* Redefined Button Group for side-by-side "Change Cover" */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-btn-group {
+    flex-direction: column; /* Buttons on separate lines */
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 0;
+    width: 100%;
+    margin-bottom: 30px; /* Spacer before new info display */
+  }
+
+  /* Updated "Change Cover" button: text side-by-side with icon */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-change-cover-btn-landscape {
+    display: flex;
+    flex-direction: row; /* Horizontal text and icon */
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px; /* Side-by-side gap */
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    max-width: none;
+    border-radius: 20px;
+    background: #1c1c1e;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    width: auto; /* Fit to content */
+    max-width: fit-content;
+  }
+
+  /* Smaller "Edit Info" button that fits better */
+  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-edit-info-btn-landscape {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    width: auto;
+    max-width: fit-content;
+    border-radius: 20px;
+    background: #1c1c1e;
+    color: #ddd;
+    border: 1px solid #2a2a2a;
+  }
+
+  /* Display of Song Information */
+  .fv-song-info-display {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #aaa;
+    font-size: 13px;
+    border-top: 1px solid #222; /* Minimal horizontal rule */
+    padding-top: 16px;
+  }
+  .fv-info-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .fv-info-label {
+    font-weight: 500;
+  }
+  .fv-info-value {
+    color: #fff;
+    font-weight: 400;
+  }
 }
 
 @media screen and (orientation: portrait) {
@@ -511,6 +642,8 @@ input {
     .fv-btn-group { justify-content: flex-start; }
     .fv-change-cover-btn { max-width: none;}
     .fv-tracks-list { max-width: none;}
+    /* Ensure info display does not break portrait layout */
+    .fv-song-info-display { display: none !important; }
 }
 
 /* Modal styling is maintained, just re-ensuring Pitch Black aesthetic */
@@ -997,7 +1130,8 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
   updatePlayIcon(); 
-  renderDetailView();
+  // Redetail view if detail panel is open to update dynamic metadata
+  if (currentItemForDetail) renderDetailView();
 }
 
 function updatePlayIcon() { 
@@ -1161,13 +1295,62 @@ async function renderTab(id, items) {
   }
 }
 
-// detailView reformatting/centered logic, no "Play Song" button
+// Utility to format dates/bytes
+const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm = 1; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; };
+const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
+
+// Updated to build full split view for songs ONLY (landscape)
 async function renderDetailView() {
   const i = currentItemForDetail; 
   if (!i) return; 
-  document.getElementById('fvDetailTitleBar').textContent = i.title; 
-  const c = document.getElementById('fvDetailContent'); c.innerHTML = '';
   
+  const c = document.getElementById('fvDetailContent'); c.innerHTML = '';
+  // Set the top title. CSS hides this in landscape for the split view.
+  document.getElementById('fvDetailTitleBar').textContent = i.title; 
+
+  if (i.type === 'song') {
+    // UPDATED Layout: ONLY applied to Landscape view for songs
+    if (window.innerHeight < window.innerWidth) {
+      // Left Column: Large Hero with large Cover
+      const hero = document.createElement('div'); hero.className = 'fv-detail-hero fv-detail-hero-song-landscape';
+      const coverWrap = document.createElement('div'); coverWrap.className = 'fv-detail-cover-wrap fv-detail-cover-wrap-large-landscape';
+      coverWrap.appendChild(await getCoverCanvas(i, 340)); // Large canvas size
+      hero.appendChild(coverWrap);
+      c.appendChild(hero);
+
+      // Right Column: All info, buttons, and metadata display
+      const infoColumn = document.createElement('div'); infoColumn.className = 'fv-detail-info-col fv-detail-info-col-song-landscape';
+      
+      const textGroup = document.createElement('div'); textGroup.className = 'fv-detail-info-text';
+      textGroup.innerHTML = `<div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div>`;
+      infoColumn.appendChild(textGroup);
+
+      // New Button Group for separate, styled buttons
+      const btnGroup = document.createElement('div'); btnGroup.className = 'fv-btn-group fv-btn-group-landscape';
+      btnGroup.innerHTML = `
+        <button class="fv-change-cover-btn-landscape" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="position:relative;top:-1px;"><path d="M8 0a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5a6.5 6.5 0 1 1 6.5-6.5 6.5 6.5 0 0 1-6.5 6.5zM8 3a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm-.75-3.75v1.5h1.5v-1.5h-1.5z" fill="#fff"/></svg>
+          Change Cover
+        </button>
+        <button class="fv-edit-info-btn-landscape" onclick="openEditModal()">Edit Info</button>
+      `;
+      infoColumn.appendChild(btnGroup);
+
+      // Song Information Display
+      const infoDisplay = document.createElement('div'); infoDisplay.className = 'fv-song-info-display';
+      infoDisplay.innerHTML = `
+        <div class="fv-info-item"><span class="fv-info-label">Size</span><span class="fv-info-value">${i.size ? formatBytes(i.size) : '—'}</span></div>
+        <div class="fv-info-item"><span class="fv-info-label">Date Added</span><span class="fv-info-value">${i.uploadDate ? formatDate(i.uploadDate) : '—'}</span></div>
+        <div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : formatDate(i.uploadDate)}</span></div>
+      `;
+      infoColumn.appendChild(infoDisplay);
+
+      c.appendChild(infoColumn);
+      return; // Landscape Song structure complete
+    }
+  }
+
+  // PORTRAIT or ALBUM view: Use existing centered logic and track list
   const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
   h.innerHTML = `
     <div class="fv-detail-cover-wrap"></div>
@@ -1181,29 +1364,41 @@ async function renderDetailView() {
     </div>`;
   h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 140)); c.appendChild(h);
   
-  const tl = document.createElement('div'); tl.className = 'fv-tracks-list';
   if (i.type === 'album') { 
+    const tl = document.createElement('div'); tl.className = 'fv-tracks-list';
     i.tracks.forEach(t => { 
       const tr = document.createElement('div'); tr.className = 'fv-track-item'; tr.innerHTML = `<div class="fv-track-name">${t.title}</div>`; tr.onclick = () => playTrack(t.audioId, t.title, i); tl.appendChild(tr); 
     }); 
     const ad = document.createElement('button'); ad.className = 'fv-change-cover-btn'; ad.style.marginTop = '10px'; ad.style.width = '100%'; ad.style.maxWidth = 'none'; ad.textContent = '+ Add Track'; ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); }; tl.appendChild(ad); 
-  } else if (i.audioId) { 
-    // "Play Song" button is removed from fvDetail tab per request
+    c.appendChild(tl);
   }
-  c.appendChild(tl);
 }
 
 /* ================================================================
    DATA EDITING & IMPORTING
 ================================================================ */
 function openEditModal() { editTargetItem = currentItemForDetail; document.getElementById('editTitleInput').value = editTargetItem.title; document.getElementById('editArtistInput').value = editTargetItem.artist; document.getElementById('editModal').classList.add('open'); }
-document.getElementById('editConfirm').onclick = async () => { editTargetItem.title = document.getElementById('editTitleInput').value; editTargetItem.artist = document.getElementById('editArtistInput').value; await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); document.getElementById('editModal').classList.remove('open'); renderAllTabs(); renderDetailView(); buildCoverFlow(); };
+
+// Updated to auto-update Date Modified in database
+document.getElementById('editConfirm').onclick = async () => { 
+  editTargetItem.title = document.getElementById('editTitleInput').value; 
+  editTargetItem.artist = document.getElementById('editArtistInput').value; 
+  // UpdateDateModified: Auto-update metadata timestamp
+  editTargetItem.modifiedDate = Date.now(); 
+  await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); 
+  document.getElementById('editModal').classList.remove('open'); 
+  renderAllTabs(); 
+  renderDetailView(); 
+  buildCoverFlow(); 
+};
+
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
 document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
+
 document.getElementById('audioInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f) return; showToast('Importing...'); 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
-  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), _slot: library.length }; 
+  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: library.length, size: f.size }; 
   library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); showToast('Done ✓'); e.target.value = '';
 };
 document.getElementById('newAlbumBtn2').onclick = () => { document.getElementById('newAlbumModal').classList.add('open'); };
@@ -1215,17 +1410,27 @@ document.getElementById('albumModalCreate').onclick = async () => {
 document.getElementById('albumModalCancel').onclick = () => document.getElementById('newAlbumModal').classList.remove('open');
 document.getElementById('pickAudioRow').onclick = () => document.getElementById('trackAudioInput').click();
 document.getElementById('trackAudioInput').onchange = e => { const f = e.target.files[0]; if (f) document.getElementById('pickAudioLabel').textContent = f.name; };
+
 document.getElementById('addTrackConfirm').onclick = async () => { 
   const t = document.getElementById('trackTitleInput').value; const f = document.getElementById('trackAudioInput').files[0]; if (!t || !f) return; 
-  const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); alb.tracks.push({id: genId(), title: t, audioId: bId}); 
+  const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); 
+  alb.tracks.push({id: genId(), title: t, audioId: bId}); 
+  // UpdateDateModified: Auto-update metadata timestamp
+  alb.modifiedDate = Date.now(); 
   await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); document.getElementById('addTrackModal').classList.remove('open'); renderDetailView(); document.getElementById('trackAudioInput').value = '';
 };
+
 document.getElementById('addTrackCancel').onclick = () => document.getElementById('addTrackModal').classList.remove('open');
+
+// Updated to auto-update Date Modified in database
 document.getElementById('coverInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f || !coverChangeTargetId) return; 
   const bId = genId(); await dbPut('blobs', bId, f); const i = library.find(x => x.id === coverChangeTargetId); i.coverId = bId; 
+  // UpdateDateModified: Auto-update metadata timestamp
+  i.modifiedDate = Date.now(); 
   await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(); e.target.value = '';
 };
+
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
@@ -1254,13 +1459,13 @@ portCoverWrap.addEventListener('touchend', e => {
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
-  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeNP(); }, 100); 
+  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(); }, 100); 
 });
 
 
 // Initialization logic
 async function init() { 
-  // 1. Move fade removal to the very top. If anything below fails, the app won't get stuck permanently black.
+  // Fade removal moves to top for stability.
   setTimeout(() => {
     const fadeScreen = document.getElementById('startupFade');
     if(fadeScreen) { 
@@ -1269,14 +1474,14 @@ async function init() {
     }
   }, 100);
 
-  // 2. Wrap the DB call in a try-catch block so a silent crash doesn't halt the rest of the script
+  // DB initialization. Setup fallback if blocked.
   try {
     await openDB(); 
     const saved = await dbGetAll('albums'); 
     if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
   } catch (e) {
     console.warn("Database initialization failed or was blocked:", e);
-    library = []; // Setup an empty state if the database fails
+    library = [];
   }
 
   const allTracks = [];
@@ -1297,14 +1502,14 @@ async function init() {
   setTimeout(buildCoverFlow, 150);
 }
 
-// 3. iOS PWA Fix: window.onload can be completely missed if the document loads from a suspended cache.
+// iOS PWA state check for onload event.
 if (document.readyState !== 'loading') {
   init();
 } else {
   document.addEventListener('DOMContentLoaded', init);
 }
 
-// 4. Register Service Worker immediately without waiting for the 'load' event
+// Service Worker register.
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); 
 }
