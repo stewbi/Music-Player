@@ -769,7 +769,7 @@ let pendingTrackAlbumId = null;
 let coverChangeTargetId = null;
 let editTargetItem = null;
 let editTargetTrackId = null;
-let currentTrackCoverUrl = null; 
+const MEDIA_ART_CACHE = {}; 
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -874,7 +874,6 @@ async function getCoverCanvas(item, size) {
     const blob = await dbGet('blobs', item.coverId).catch(() => null);
     if (blob) {
       const url = BLOBURL_CACHE[item.coverId] || (BLOBURL_CACHE[item.coverId] = URL.createObjectURL(blob));
-      currentTrackCoverUrl = url;
 
       return new Promise(res => {
         const img = new Image();
@@ -883,14 +882,12 @@ async function getCoverCanvas(item, size) {
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
           
-          // Initial crop to square
           let currentCanvas = document.createElement('canvas');
           currentCanvas.width = minDim;
           currentCanvas.height = minDim;
           let cCtx = currentCanvas.getContext('2d');
           cCtx.drawImage(img, sx, sy, minDim, minDim, 0, 0, minDim, minDim);
 
-          // Iterative step-down halving for smooth quality
           while (currentCanvas.width * 0.5 >= size) {
             let nextCanvas = document.createElement('canvas');
             nextCanvas.width = currentCanvas.width * 0.5;
@@ -902,7 +899,6 @@ async function getCoverCanvas(item, size) {
             currentCanvas = nextCanvas;
           }
 
-          // Final exact draw to requested target size
           const finalCanvas = document.createElement('canvas');
           finalCanvas.width = size;
           finalCanvas.height = size;
@@ -918,8 +914,17 @@ async function getCoverCanvas(item, size) {
       });
     }
   }
-  currentTrackCoverUrl = null;
   return drawPlaceholderCover(size, item ? item._slot || 0 : 0);
+}
+
+// Generates a proper cropped Data URL safely formatted for the MediaSession Lock Screen
+async function getMediaSessionArt(item) {
+  if (!item || !item.coverId) return null;
+  if (MEDIA_ART_CACHE[item.coverId]) return MEDIA_ART_CACHE[item.coverId];
+  const canvas = await getCoverCanvas(item, 512); // Standard Lock Screen size natively
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  MEDIA_ART_CACHE[item.coverId] = dataUrl;
+  return dataUrl;
 }
 
 /* ================================================================
@@ -964,7 +969,21 @@ async function buildCoverFlow() {
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
     
-    wrap.onclick = () => (current === i ? togglePlayCurrentItem() : setCurrent(i));
+    // Tap verification applied to prevent swipes from triggering clicks
+    wrap.onclick = (e) => {
+       if (cfMoved) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+       }
+       const isPortrait = window.innerHeight > window.innerWidth;
+       if (current === i) {
+          togglePlayCurrentItem();
+       } else if (!isPortrait) {
+          // Snap functionality disabled safely for portrait mode
+          setCurrent(i);
+       }
+    };
     document.getElementById('cfTrack').appendChild(wrap); 
     cfNodes.push(wrap);
   }
@@ -983,6 +1002,15 @@ function layoutCoverFlow() {
   cfNodes.forEach((node, i) => {
     const diff = i - current;
     const absDiff = Math.abs(diff);
+    
+    // Virtual Rendering Performance Fix: DOM culling for hidden distant items
+    if (absDiff > 6) {
+       node.style.display = 'none';
+       return;
+    } else {
+       node.style.display = 'block';
+    }
+
     const dir = diff > 0 ? 1 : diff < 0 ? -1 : 0;
     let x, rotY, scale, zIndex, opacity;
     
@@ -1015,7 +1043,6 @@ function layoutCoverFlow() {
     if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) { node.style.opacity = opacity; }
   });
   
-  // Dynamically center the text between the screen top and album art top
   document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
   
   const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Add music to Music Library', _empty: true}];
@@ -1027,22 +1054,18 @@ function layoutCoverFlow() {
   titleEl.textContent = tText; 
   artistEl.textContent = aText;
 
-  // Sync portrait top text to the currently centered CoverFlow item
   const pt = document.getElementById('portTitle');
   const pa = document.getElementById('portArtist');
   if (pt) pt.textContent = tText;
   if (pa) pa.textContent = aText;
 
-  // Sync portrait cover art to the currently centered CoverFlow item
   getCoverCanvas(item, 340).then(c => {
-     // Check to make sure we haven't quickly swiped past this item before updating
      if (item === items[Math.min(current, items.length - 1)]) {
          const pcc = document.getElementById('portCanvasContainer');
          if(pcc) { pcc.innerHTML = ''; pcc.appendChild(c); }
      }
   });
   
-  // Dynamic Marquee evaluation
   setTimeout(evaluateMarqueeCenter, 50);
   setTimeout(evaluateMarqueeNP, 50);
 }
@@ -1061,7 +1084,6 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-// Shared evaluation logic for marquee effects and dynamic mask triggering
 function _evaluateMarqueeInternal(ids) {
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -1070,17 +1092,14 @@ function _evaluateMarqueeInternal(ids) {
     el.style.transform = 'none';
     const parent = el.parentElement;
     
-    // Only remove/add needs-mask logic for our specific wrappers
     if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
         parent.classList.remove('needs-mask');
-        
         if (el.scrollWidth > parent.clientWidth) {
           el.style.setProperty('--mw', parent.clientWidth + 'px');
           el.classList.add('scroll');
-          parent.classList.add('needs-mask'); // Apply mask dynamically
+          parent.classList.add('needs-mask'); 
         }
     } else {
-        // Fallback for elements without explicit wrapper targeting (like cfTitle)
         if (el.scrollWidth > parent.clientWidth) {
           el.style.setProperty('--mw', parent.clientWidth + 'px');
           el.classList.add('scroll');
@@ -1089,9 +1108,7 @@ function _evaluateMarqueeInternal(ids) {
   });
 }
 
-function evaluateMarqueeCenter() {
-  _evaluateMarqueeInternal(['cfTitle', 'cfArtist']);
-}
+function evaluateMarqueeCenter() { _evaluateMarqueeInternal(['cfTitle', 'cfArtist']); }
 
 function evaluateMarqueeNP() {
   ['npTitle', 'npArtist', 'portTitle', 'portArtist'].forEach(id => {
@@ -1126,18 +1143,17 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
   
-  // NOTE: Portrait mode text and canvas are now kept synced to Cover Flow `current` via `layoutCoverFlow()`
-  // They are NO LONGER forcibly overwritten here to allow independent Cover Flow browsing while playing.
-  
-  // Calculate text bleed / marquee
   setTimeout(evaluateMarqueeNP, 50);
+
+  // Await the cropped data URL to prevent race conditions during rapid track skipping
+  const artDataUrl = await getMediaSessionArt(albumItem);
 
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: trackTitle || 'Unknown Track',
       artist: albumItem?.artist || 'Unknown Artist',
       album: albumItem?.title || '',
-      artwork: currentTrackCoverUrl ? [{ src: currentTrackCoverUrl, sizes: '512x512', type: 'image/png' }] : []
+      artwork: artDataUrl ? [{ src: artDataUrl, sizes: '512x512', type: 'image/jpeg' }] : []
     });
     navigator.mediaSession.setActionHandler('play', () => { audioEl.play().catch(()=>{}); isPlaying = true; updatePlayIcon(); });
     navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); isPlaying = false; updatePlayIcon(); });
@@ -1308,7 +1324,6 @@ async function renderTab(id, items) {
   }
 }
 
-// Utility to format dates/bytes
 const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm = 1; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; };
 const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
 
@@ -1340,11 +1355,9 @@ async function renderDetailView() {
           <div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : formatDate(i.uploadDate)}</span></div>
         </div>
       </div>`;
-    // Cover is drawn at full resolution, CSS handles scaling down to prevent greyness
     hero.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 340)); 
     c.appendChild(hero);
   } else {
-    // Legacy view protected for Albums
     document.getElementById('fvDetailTitleBar').textContent = i.title; 
     
     const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
@@ -1367,7 +1380,7 @@ function openEditModal() { editTargetItem = currentItemForDetail; document.getEl
 
 document.getElementById('editConfirm').onclick = async () => { 
   editTargetItem.title = document.getElementById('editTitleInput').value; editTargetItem.artist = document.getElementById('editArtistInput').value; 
-  editTargetItem.modifiedDate = Date.now(); // Update date modified
+  editTargetItem.modifiedDate = Date.now(); 
   await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); 
   document.getElementById('editModal').classList.remove('open'); renderAllTabs(); renderDetailView(); buildCoverFlow(); 
 };
@@ -1375,7 +1388,6 @@ document.getElementById('editConfirm').onclick = async () => {
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
 document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
 
-// Upload without the Done notification, auto-syncing Cover Flow and portrait UI
 document.getElementById('audioInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f) return; 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
@@ -1396,7 +1408,7 @@ document.getElementById('addTrackConfirm').onclick = async () => {
   const t = document.getElementById('trackTitleInput').value; const f = document.getElementById('trackAudioInput').files[0]; if (!t || !f) return; 
   const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); 
   alb.tracks.push({id: genId(), title: t, audioId: bId}); 
-  alb.modifiedDate = Date.now(); // Update parent album date modified
+  alb.modifiedDate = Date.now(); 
   await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); document.getElementById('addTrackModal').classList.remove('open'); renderDetailView(); document.getElementById('trackAudioInput').value = '';
 };
 
@@ -1405,23 +1417,53 @@ document.getElementById('addTrackCancel').onclick = () => document.getElementByI
 document.getElementById('coverInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f || !coverChangeTargetId) return; 
   const bId = genId(); await dbPut('blobs', bId, f); const i = library.find(x => x.id === coverChangeTargetId); i.coverId = bId; 
-  i.modifiedDate = Date.now(); // Update date modified
+  i.modifiedDate = Date.now(); 
   await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(); e.target.value = '';
 };
 
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS
+   INITIALIZATION & TOUCH EVENTS (SWIPE DISTANCE VERIFIED)
 ================================================================ */
 
-let touchStartX = 0;
-cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
-cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
+let touchStartX = 0, touchStartY = 0, cfMoved = false;
+cfStage.addEventListener('touchstart', e => { 
+  touchStartX = e.touches[0].clientX; 
+  touchStartY = e.touches[0].clientY; 
+  cfMoved = false;
+}, {passive: true});
 
-let mouseX = 0, dragging = false;
-cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
-window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
+cfStage.addEventListener('touchmove', e => {
+  if (Math.abs(e.touches[0].clientX - touchStartX) > 10 || Math.abs(e.touches[0].clientY - touchStartY) > 10) {
+    cfMoved = true;
+  }
+}, {passive: true});
+
+cfStage.addEventListener('touchend', e => { 
+  const dx = e.changedTouches[0].clientX - touchStartX; 
+  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); 
+  setTimeout(() => cfMoved = false, 50); // Reset after click eval window
+});
+
+let mouseX = 0, mouseY = 0, dragging = false;
+cfStage.addEventListener('mousedown', e => { 
+  dragging = true; mouseX = e.clientX; mouseY = e.clientY; cfMoved = false; 
+});
+
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  if (Math.abs(e.clientX - mouseX) > 10 || Math.abs(e.clientY - mouseY) > 10) {
+    cfMoved = true;
+  }
+});
+
+window.addEventListener('mouseup', e => { 
+  if (!dragging) return; dragging = false; 
+  const dx = e.clientX - mouseX; 
+  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); 
+  setTimeout(() => cfMoved = false, 50);
+});
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
