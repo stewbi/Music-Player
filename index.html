@@ -499,13 +499,13 @@ input {
   /* UPDATED Layout: ONLY applied to Landscape view for songs */
   #fvDetailContent:not(:has(.fv-tracks-list)) {
     flex-direction: row;
-    align-items: center;
-    padding: 0 max(env(safe-area-inset-left, 0px), 18px) 0 max(env(safe-area-inset-right, 0px), 18px); /* Full use of safe areas */
-    justify-content: center; /* Center the two columns */
-    gap: max(env(safe-area-inset-left, 0px), 18px); /* Use a larger gap that integrates safe area */
+    align-items: center; /* This vertically centers the two columns on screen */
+    padding: 20px max(env(safe-area-inset-left, 0px), 18px) 20px max(env(safe-area-inset-right, 0px), 18px); /* Minimal vertical padding to make flex centering true, using safe area left/right */
+    justify-content: center; /* Center the two columns horizontally on screen */
+    gap: max(env(safe-area-inset-left, 0px), 18px); /* Use gap that incorporates safe area */
   }
 
-  /* Bigger buttons */
+  /* Bigger, bolder buttons that match 'Change Cover' font attributes */
   #fvBackBtn {
     font-size: 15px;
     font-weight: 700;
@@ -517,12 +517,12 @@ input {
     font-size: 20px;
   }
 
-  /* Remove song title text from top */
+  /* Remove song title text from top for cleaner look */
   #fvDetailTitleBar {
     display: none;
   }
 
-  /* Left Column: Larger and cleaner cover art preview */
+  /* Left Column: Larger and cleaner cover art preview, centrally aligned */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-hero {
     flex: 1 1 50%;
     align-items: flex-start; /* Correct alignment for the split view */
@@ -540,12 +540,12 @@ input {
     object-fit: contain;
   }
 
-  /* Right Column: Information, buttons, and display */
+  /* Right Column: Information, buttons, and display, centrally aligned vertically */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-info-col {
     flex: 1 1 50%;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Left-align all content */
+    align-items: flex-start; /* Left-align all content within right block */
     padding-left: 20px;
     text-align: left; /* Left-align title/artist text */
   }
@@ -554,32 +554,34 @@ input {
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-name {
     font-size: 26px; /* Bigger */
     margin-bottom: 4px;
+    margin-top: 0; /* Ensure title is at the top of the block */
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-artist {
     font-size: 18px; /* Bigger */
-    margin-bottom: 24px; /* More spacing */
+    margin-bottom: 24px; /* Space before buttons */
   }
 
-  /* Redefined Button Group for side-by-side "Change Cover" */
+  /* Redefined Button Group: Both on ONE LINE, left aligned, with same text size/appearance */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-btn-group {
-    flex-direction: column; /* Buttons on separate lines */
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: row; /* Horizontal text and icon on ONE LINE */
+    align-items: center; /* Center them horizontally */
+    gap: 12px; /* Set a consistent gap between buttons on same line */
     margin-top: 0;
-    width: 100%;
+    width: auto; /* Buttons fit to content */
     margin-bottom: 30px; /* Spacer before new info display */
+    justify-content: flex-start; /* Correct left alignment within the group */
   }
 
-  /* Updated "Change Cover" button: text side-by-side with icon */
+  /* Updated "Change Cover" button: text on same line as icon, correct font size/weight */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-change-cover-btn-landscape {
     display: flex;
-    flex-direction: row; /* Horizontal text and icon */
+    flex-direction: row; /* Horizontal text and icon on ONE LINE */
     align-items: center;
     justify-content: flex-start;
     gap: 8px; /* Side-by-side gap */
-    padding: 10px 18px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 10px 18px; /* Use the correct padding for a consistent button look */
+    font-size: 14px; /* Correct 14px size for button text */
+    font-weight: 600; /* Bold weight for 'Change Cover' text */
     max-width: none;
     border-radius: 20px;
     background: #1c1c1e;
@@ -589,11 +591,11 @@ input {
     max-width: fit-content;
   }
 
-  /* Smaller "Edit Info" button that fits better */
+  /* Smaller, styled "Edit Info" button that fits better and matches attributes of "Change Cover" text */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-edit-info-btn-landscape {
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
+    padding: 10px 18px; /* Updated padding for consistent look on ONE LINE */
+    font-size: 14px; /* Set font size to 14px to match 'Change Cover' for cleaner UI and attribute parity as requested */
+    font-weight: 600; /* Match bold weight with 'Change Cover' as requested */
     width: auto;
     max-width: fit-content;
     border-radius: 20px;
@@ -602,7 +604,7 @@ input {
     border: 1px solid #2a2a2a;
   }
 
-  /* Display of Song Information */
+  /* Display of Song Information centrally positioned */
   .fv-song-info-display {
     width: 100%;
     max-width: 320px;
@@ -611,7 +613,7 @@ input {
     gap: 6px;
     color: #aaa;
     font-size: 13px;
-    border-top: 1px solid #222; /* Minimal horizontal rule */
+    border-top: 1px solid #222; /* Minimal horizontal rule to separate from buttons block */
     padding-top: 16px;
   }
   .fv-info-item {
@@ -1325,7 +1327,7 @@ async function renderDetailView() {
       textGroup.innerHTML = `<div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div>`;
       infoColumn.appendChild(textGroup);
 
-      // New Button Group for separate, styled buttons
+      // New Button Group for separate, styled buttons side-by-side on same line
       const btnGroup = document.createElement('div'); btnGroup.className = 'fv-btn-group fv-btn-group-landscape';
       btnGroup.innerHTML = `
         <button class="fv-change-cover-btn-landscape" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
