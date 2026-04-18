@@ -463,7 +463,7 @@ input {
 
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 70px;}
 
-/* Centered content logic, respecting Safe Areas across orientations */
+/* Centered content logic, respecting Safe Areas of iPhone across orientations */
 #fvDetailContent { 
   flex: 1; 
   overflow-y: auto; 
@@ -485,8 +485,9 @@ input {
 .fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
 .fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;}
 
-/* detailView reformatting logic for Safe areas and restoral of original landscape aesthetic */
+/* detailView reformatting logic for Landscape aesthetic *only* */
 @media screen and (orientation: landscape) {
+  /* Restoring Multi-Column view */
   #fvDetailContent {
     flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 40px;
     padding-left: max(env(safe-area-inset-left), 20px);
@@ -499,10 +500,12 @@ input {
   /* UPDATED Layout: ONLY applied to Landscape view for songs */
   #fvDetailContent:not(:has(.fv-tracks-list)) {
     flex-direction: row;
-    align-items: center; /* This vertically centers the two columns on screen */
-    padding: 20px max(env(safe-area-inset-left, 0px), 18px) 20px max(env(safe-area-inset-right, 0px), 18px); /* Minimal vertical padding to make flex centering true, using safe area left/right */
-    justify-content: center; /* Center the two columns horizontally on screen */
-    gap: max(env(safe-area-inset-left, 0px), 18px); /* Use gap that incorporates safe area */
+    align-items: center; /* Vertically center the two columns */
+    justify-content: center; /* Horizontally center */
+    /* Add bottom padding buffer to push the vertically centered elements UP to the true visual center */
+    padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
+    gap: max(env(safe-area-inset-left, 0px), 40px); /* Spacious gap between art and text */
+    height: 100%;
   }
 
   /* Bigger, bolder buttons that match 'Change Cover' font attributes */
@@ -524,84 +527,86 @@ input {
 
   /* Left Column: Larger and cleaner cover art preview, centrally aligned */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-hero {
-    flex: 1 1 50%;
-    align-items: flex-start; /* Correct alignment for the split view */
+    flex: 0 0 auto;
+    align-items: center;
     margin: 0;
-    justify-content: center; /* Center cover within its column */
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap {
-    width: min(85%, 340px); /* Fill most of column but cap for size */
-    height: min(85%, 340px);
+    width: 240px; /* Fixed large size */
+    height: 240px;
     border-radius: 12px;
-    display: block; /* Use drawPlaceholderCover/getCoverCanvas with larger size in JS */
+    display: block; 
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap canvas {
-    width: 100% !important; height: 100% !important; /* Ensure canvas fills container */
+    width: 100% !important; height: 100% !important;
     object-fit: contain;
   }
 
   /* Right Column: Information, buttons, and display, centrally aligned vertically */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-info-col {
-    flex: 1 1 50%;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: flex-start; /* Left-align all content within right block */
-    padding-left: 20px;
-    text-align: left; /* Left-align title/artist text */
+    text-align: left; 
+    min-width: 260px; /* Prevent shrinking/wrapping */
   }
 
   /* Larger title/artist text on the right */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-name {
     font-size: 26px; /* Bigger */
     margin-bottom: 4px;
-    margin-top: 0; /* Ensure title is at the top of the block */
+    margin-top: 0; 
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-artist {
     font-size: 18px; /* Bigger */
     margin-bottom: 24px; /* Space before buttons */
   }
 
-  /* Redefined Button Group: Both on ONE LINE, left aligned, with same text size/appearance */
+  /* Redefined Button Group: Both on ONE LINE, left aligned */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-btn-group {
-    flex-direction: row; /* Horizontal text and icon on ONE LINE */
-    align-items: center; /* Center them horizontally */
-    gap: 12px; /* Set a consistent gap between buttons on same line */
+    flex-direction: row; 
+    align-items: center; 
+    gap: 12px; 
     margin-top: 0;
-    width: auto; /* Buttons fit to content */
-    margin-bottom: 30px; /* Spacer before new info display */
-    justify-content: flex-start; /* Correct left alignment within the group */
+    width: auto; 
+    margin-bottom: 24px; 
+    justify-content: flex-start; 
   }
 
-  /* Updated "Change Cover" button: text on same line as icon, correct font size/weight */
+  /* Updated "Change Cover" button: Force text to stay on one line with nowrap */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-change-cover-btn-landscape {
     display: flex;
-    flex-direction: row; /* Horizontal text and icon on ONE LINE */
+    flex-direction: row; 
     align-items: center;
-    justify-content: flex-start;
-    gap: 8px; /* Side-by-side gap */
-    padding: 10px 18px; /* Use the correct padding for a consistent button look */
-    font-size: 14px; /* Correct 14px size for button text */
-    font-weight: 600; /* Bold weight for 'Change Cover' text */
-    max-width: none;
+    justify-content: center;
+    gap: 8px; 
+    padding: 10px 18px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    white-space: nowrap; /* PREVENTS TEXT STACKING */
     border-radius: 20px;
     background: #1c1c1e;
     color: #fff;
     border: 1px solid #2a2a2a;
-    width: auto; /* Fit to content */
-    max-width: fit-content;
+    width: auto; 
   }
 
-  /* Smaller, styled "Edit Info" button that fits better and matches attributes of "Change Cover" text */
+  /* "Edit Info" button: un-bolded, same text size, forced to one line */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-edit-info-btn-landscape {
-    padding: 10px 18px; /* Updated padding for consistent look on ONE LINE */
-    font-size: 14px; /* Set font size to 14px to match 'Change Cover' for cleaner UI and attribute parity as requested */
-    font-weight: 600; /* Match bold weight with 'Change Cover' as requested */
-    width: auto;
-    max-width: fit-content;
+    display: flex;
+    flex-direction: row; 
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px; 
+    font-size: 14px; 
+    font-weight: 500; /* UN-BOLDED */
+    white-space: nowrap; /* PREVENTS TEXT STACKING */
     border-radius: 20px;
     background: #1c1c1e;
     color: #ddd;
     border: 1px solid #2a2a2a;
+    width: auto;
   }
 
   /* Display of Song Information centrally positioned */
@@ -613,7 +618,7 @@ input {
     gap: 6px;
     color: #aaa;
     font-size: 13px;
-    border-top: 1px solid #222; /* Minimal horizontal rule to separate from buttons block */
+    border-top: 1px solid #222; 
     padding-top: 16px;
   }
   .fv-info-item {
@@ -631,6 +636,7 @@ input {
 }
 
 @media screen and (orientation: portrait) {
+    /* Portrait mode logic reformatting ensures left alignment for text, respecting boundaries, preventing forced centering */
     #fvDetail { padding-top: max(env(safe-area-inset-top), 20px); }
     #fvDetailContent {
         align-items: flex-start;
@@ -1074,25 +1080,36 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-// Dynamically checks thresholds and ONLY applies masks/animations when exceeded
-function evaluateMarqueeNP() {
-  ['npTitle', 'npArtist', 'portTitle'].forEach(id => {
+// Shared evaluation logic for marquee effects
+function _evaluateMarqueeInternal(ids) {
+  ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    
     el.classList.remove('scroll');
     el.style.transform = 'none';
-    const parent = el.parentElement; 
-    parent.classList.remove('masked-overflow');
-
-    // Force reflow for accurate measurements
-    void el.offsetWidth;
-
-    // The threshold is managed by the CSS constraints (e.g. max-width on parent containers).
+    const parent = el.parentElement; // Expected to be .marquee-wrap
     if (el.scrollWidth > parent.clientWidth) {
       el.style.setProperty('--mw', parent.clientWidth + 'px');
       el.classList.add('scroll');
-      parent.classList.add('masked-overflow');
+    }
+  });
+}
+
+function evaluateMarqueeCenter() {
+  _evaluateMarqueeInternal(['cfTitle', 'cfArtist']);
+}
+
+function evaluateMarqueeNP() {
+  ['npTitle', 'npArtist', 'portTitle', 'portArtist'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('scroll');
+    el.style.transform = 'none';
+    const parent = el.parentElement;
+    if (el.scrollWidth > parent.clientWidth) {
+      // Create permanent face mask effect when scrolling is active
+      el.style.setProperty('--mw', parent.clientWidth + 'px');
+      el.classList.add('scroll');
     }
   });
 }
@@ -1113,7 +1130,7 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('portTitle').textContent = trackTitle || 'Unknown Track';
   document.getElementById('portArtist').textContent = albumItem?.artist || '';
   
-  // Calculate text bleed / marquee bounds
+  // Calculate text bleed / marquee
   setTimeout(evaluateMarqueeNP, 50);
 
   document.getElementById('portCanvasContainer').innerHTML = '';
@@ -1132,8 +1149,7 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
   updatePlayIcon(); 
-  // Redetail view if detail panel is open to update dynamic metadata
-  if (currentItemForDetail) renderDetailView();
+  renderDetailView();
 }
 
 function updatePlayIcon() { 
@@ -1316,7 +1332,7 @@ async function renderDetailView() {
       // Left Column: Large Hero with large Cover
       const hero = document.createElement('div'); hero.className = 'fv-detail-hero fv-detail-hero-song-landscape';
       const coverWrap = document.createElement('div'); coverWrap.className = 'fv-detail-cover-wrap fv-detail-cover-wrap-large-landscape';
-      coverWrap.appendChild(await getCoverCanvas(i, 340)); // Large canvas size
+      coverWrap.appendChild(await getCoverCanvas(i, 240)); // Adjusted to match exact CSS bounds
       hero.appendChild(coverWrap);
       c.appendChild(hero);
 
