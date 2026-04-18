@@ -125,7 +125,7 @@ input {
   position: absolute;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.42s cubic-bezier(.25,.8,.25,1), left 0.42s cubic-bezier(.25,.8,.25,1);
+  transition: transform 0.38s cubic-bezier(.1,.6,.3,1.0), left 0.38s cubic-bezier(.1,.6,.3,1.0); /* Smoother overall transitions */
 }
 .cf-cover {
   border-radius: 8px;
@@ -158,7 +158,7 @@ input {
   z-index: 2;
 }
 
-/* ===== CENTER UI: TEXT (LANDSCAPE) ===== */
+/* ===== CENTER UI: TEXT (LANDSCAPE) + MARQUEE ===== */
 #centerUI {
   position: absolute;
   left: 0;
@@ -177,6 +177,21 @@ input {
   align-items: baseline; 
   justify-content: center;
   gap: 10px; 
+}
+
+/* Text Mask & Marquee logic for Center UI */
+.cf-text-mask {
+  display: flex; flex-direction: column; align-items: center;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+}
+.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; justify-content: center;}
+.marquee-text { white-space: nowrap; display: inline-block; }
+.marquee-text.scroll { animation: marquee 5.5s linear infinite alternate; } /* Match lower NP speed */
+
+@keyframes marquee {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
 }
 #cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; }
 #cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; }
@@ -246,22 +261,16 @@ input {
   width: 100%; padding: 0 16px; position: relative; pointer-events: auto; 
 }
 
-/* Left: Track Info Thumbnail (LANDSCAPE) + Marquee Update */
+/* Left: Track Info Thumbnail (LANDSCAPE) */
 #npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; }
 #npThumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: #1a1a1a; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
 #npInfo { 
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
-  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 20px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
 }
-.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; }
-.marquee-text { white-space: nowrap; display: inline-block; }
-.marquee-text.scroll { animation: marquee 5s linear infinite alternate; }
-@keyframes marquee {
-  0%, 15% { transform: translateX(0); }
-  85%, 100% { transform: translateX(calc(-100% + var(--mw))); }
-}
+/* Recycled marquee style from Center UI */
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
 
@@ -296,7 +305,6 @@ input {
   }
 
   .cf-stage::after {
-    /* Safe-zone gradient for portrait, leaving 80vw open for the 75vw center cover */
     background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 90%, rgba(0,0,0,1) 100%);
   }
 
@@ -318,7 +326,7 @@ input {
     flex: 0 0 auto;
     padding-left: 20px; padding-right: 20px;
     pointer-events: auto;
-    /* Fading bounds for portrait marquee just in case */
+    /* Reuse Center UI text fade bounds */
     -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
     mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
     overflow: hidden;
@@ -454,9 +462,9 @@ input {
     </div>
 
     <div id="centerUI">
-      <div id="cfLabel">
-        <p id="cfTitle">CoverFlow</p>
-        <p id="cfArtist">Open library to import music</p>
+      <div id="cfLabel" class="cf-text-mask">
+        <div class="marquee-wrap"><p id="cfTitle" class="marquee-text">CoverFlow</p></div>
+        <div class="marquee-wrap"><p id="cfArtist" class="marquee-text">Import music to begin</p></div>
       </div>
     </div>
 
@@ -825,8 +833,12 @@ function layoutCoverFlow() {
   document.getElementById('cfLabel').style.top = '16px';
   const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Open library to import music', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
+  
   titleEl.textContent = item.title || (item._empty ? '—' : item.title); 
   artistEl.textContent = item.artist || (item._empty ? 'Import music to begin' : '');
+  
+  // Center Marquee evaluation
+  setTimeout(evaluateMarqueeCenter, 50);
 }
 
 function setCurrent(i) { 
@@ -843,14 +855,34 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-function evaluateMarquee() {
-  ['npTitle', 'npArtist', 'portTitle', 'portArtist'].forEach(id => {
+// Shared evaluation logic for marquee effects
+function _evaluateMarqueeInternal(ids) {
+  ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('scroll');
     el.style.transform = 'none';
     const parent = el.parentElement; // Expected to be .marquee-wrap
     if (el.scrollWidth > parent.clientWidth) {
+      el.style.setProperty('--mw', parent.clientWidth + 'px');
+      el.classList.add('scroll');
+    }
+  });
+}
+
+function evaluateMarqueeCenter() {
+  _evaluateMarqueeInternal(['cfTitle', 'cfArtist']);
+}
+
+function evaluateMarqueeNP() {
+  ['npTitle', 'npArtist', 'portTitle', 'portArtist'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('scroll');
+    el.style.transform = 'none';
+    const parent = el.parentElement;
+    if (el.scrollWidth > parent.clientWidth) {
+      // Create permanent face mask effect when scrolling is active
       el.style.setProperty('--mw', parent.clientWidth + 'px');
       el.classList.add('scroll');
     }
@@ -874,7 +906,7 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('portArtist').textContent = albumItem?.artist || '';
   
   // Calculate text bleed / marquee
-  setTimeout(evaluateMarquee, 50);
+  setTimeout(evaluateMarqueeNP, 50);
 
   document.getElementById('portCanvasContainer').innerHTML = '';
   document.getElementById('portCanvasContainer').appendChild(await getCoverCanvas(albumItem || {}, 340));
@@ -1109,7 +1141,7 @@ document.getElementById('coverInput').onchange = async e => {
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS (Velocity Glide Swipe)
+   INITIALIZATION & TOUCH EVENTS (REWRITTEN VELOCITY PHYSICS)
 ================================================================ */
 let swipeStartX = 0, lastSwipeX = 0, lastSwipeTime = 0, swipeVelocity = 0, isSwipingStage = false;
 
@@ -1129,12 +1161,23 @@ function handleSwipeEnd(x) {
   isSwipingStage = false;
   const dx = x - swipeStartX; const absDx = Math.abs(dx); const absVel = Math.abs(swipeVelocity);
 
+  // Precision check: if movement is small, or velocity is low, always do a 1-skip
   if (absDx > 20) {
     let skip = 1;
-    if (absVel > 0.4) { skip = Math.max(1, Math.round(absVel * 3.5)); } // Glide multiplier
-    if (absDx > 150 && skip === 1) { skip = Math.max(1, Math.round(absDx / 60)); } // Distance fallback
+    
+    // Smooth gliding logic (velocity based)
+    if (absVel > 0.35) { 
+      // Increased glide divisor, reduced overall speed effect
+      skip = Math.max(1, Math.round(absVel * 3.8)); 
+    } 
+    // Fallback based on raw distance
+    else if (absDx > 150) { 
+      // Lower distance divisor for fallbacks
+      skip = Math.max(1, Math.round(absDx / 70)); 
+    } 
 
     const dir = dx < 0 ? 1 : -1;
+    // Lower speed overall onglide transitions in CSS above (.38s cubic-bezier(.1,.6,.3,1.0))
     setCurrent(current + (dir * skip));
   }
   swipeVelocity = 0;
@@ -1149,7 +1192,7 @@ window.addEventListener('mouseup', e => { if (isSwipingStage) handleSwipeEnd(e.c
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
-  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarquee(); }, 100); 
+  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); }, 100); 
 });
 
 async function init() { 
@@ -1164,6 +1207,7 @@ async function init() {
   if (allTracks.length > 0) {
     const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
     current = Math.max(0, library.findIndex(x => x.id === randomTrack.albumItem.id));
+    // Load track quietly, evaluate marquee logic
     await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.albumItem, false);
   } else {
     current = 0;
