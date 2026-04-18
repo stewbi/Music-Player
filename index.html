@@ -417,20 +417,26 @@ input {
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
 #fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
 
-/* Sleek Header & Segment Controls */
-#fvHeader { display: flex; align-items: center; padding: 16px 20px 8px; justify-content: center; position: relative; border-bottom: none; }
+/* Sleek Header Logic: Set fixed height to perfectly center absolute buttons */
+#fvHeader, #fvDetailHeader { 
+  display: flex; align-items: center; justify-content: center; padding: 0 20px; position: relative; border-bottom: none; min-height: 64px; 
+}
+#fvDetailHeader { justify-content: space-between; }
+
 #fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
 .fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
 .fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
 
-/* Glassy Exit Button: Unified across orientations and tabs */
-.glass-close-btn { position: absolute; right: 20px; top: 16px; width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: bold; border: 1px solid #2a2a2a; z-index: 200;}
+/* Glassy Exit Button: Perfectly centered horizontally and vertically */
+.glass-close-btn { 
+  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; border: 1px solid #2a2a2a; z-index: 200;
+}
 
-/* Floating, bold Target X Close button targeting Portrait Library menu *only* */
+/* Floating bold Target X Close button targeting Portrait Library menu */
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top), 20px); }
   #fvHeader { position: relative; width: 100%; display: flex; justify-content: center;}
-  #fvCloseBtn { position: absolute; top: 10px; right: 20px; font-weight: bold;}
 }
 
 /* Import/New Buttons Bar */
@@ -452,28 +458,27 @@ input {
 .fv-item-title { font-size: 16px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; }
 
-/* ===== DETAIL VIEW (REFORMATTED & NO PLAY BUTTON) ===== */
+/* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
-#fvDetailHeader { display: flex; align-items: center; padding: 14px 20px; gap: 8px; position: relative; border-bottom: none;}
 
-/* "Back" button re-styled with Library text and glassy button aesthetic */
+/* "Back" button perfectly matched in height to absolute close button to prevent vertical offset */
 #fvBackBtn { 
-  display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
 }
 
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 70px;}
 
-/* Centered content logic, respecting Safe Areas of iPhone across orientations */
 #fvDetailContent { 
   flex: 1; 
   overflow-y: auto; 
-  overflow-x: hidden; /* Rigid horizontal lock to completely prevent side-to-side scrolling */
+  overflow-x: hidden; 
   -webkit-overflow-scrolling: touch; 
   display: flex; flex-direction: column; align-items: center; 
   padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
 }
 
+/* Original Legacy Detail view for Albums */
 .fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
 .fv-detail-cover-wrap { width: 140px; height: 140px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .fv-detail-cover-wrap canvas { width: 140px; height: 140px; display: block; object-fit: cover; }
@@ -481,172 +486,28 @@ input {
 .fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-bottom: 6px; }
 .fv-detail-artist { font-size: 16px; color: #888; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 .fv-btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 16px; width: 100%;}
-.fv-change-cover-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; flex: 1; max-width: 140px;}
+
+/* SHARED Custom Button Styles for Songs */
+.fv-change-cover-btn, .fv-edit-info-btn { 
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; border-radius: 20px; background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; width: auto; max-width: fit-content;
+}
+.fv-edit-info-btn { font-weight: 500; color: #ddd; }
+
+/* SHARED Song Info Styling */
+.fv-song-info-display {
+  display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; border-top: 1px solid #222; padding-top: 16px; margin: 0 auto;
+}
+.fv-info-item { display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: #aaa; }
+.fv-info-label { font-weight: 500; }
+.fv-info-value { color: #fff; font-weight: 400; }
 
 .fv-tracks-list { width: 100%; max-width: 320px;}
 .fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
 .fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;}
 
-/* detailView reformatting logic for Landscape aesthetic *only* */
-@media screen and (orientation: landscape) {
-  /* Restoring Multi-Column view */
-  #fvDetailContent {
-    flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 40px;
-    padding-left: max(env(safe-area-inset-left), 20px);
-    padding-right: max(env(safe-area-inset-right), 20px);
-  }
-  .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
-  .fv-detail-info-col { text-align: center;}
-  .fv-btn-group { justify-content: center; flex-direction: row; }
-
-  /* UPDATED Layout: ONLY applied to Landscape view for songs */
-  #fvDetailContent:not(:has(.fv-tracks-list)) {
-    flex-direction: row;
-    align-items: center; /* Vertically center the two columns */
-    justify-content: center; /* Horizontally center */
-    /* Bottom padding buffer pushes the vertically centered elements UP to the true visual center */
-    padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
-    gap: max(env(safe-area-inset-left, 0px), 40px); /* Spacious gap between art and text */
-    height: 100%;
-  }
-
-  /* Bigger buttons */
-  #fvBackBtn {
-    font-size: 15px;
-    font-weight: 700;
-    padding: 12px 20px;
-  }
-  #fvCloseBtn, #fvDetailCloseBtn {
-    width: 44px;
-    height: 44px;
-  }
-
-  /* Remove song title text from top for cleaner look */
-  #fvDetailTitleBar {
-    display: none;
-  }
-
-  /* Left Column: Larger and cleaner cover art preview, centrally aligned */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-hero {
-    flex: 0 0 auto;
-    align-items: center;
-    margin: 0;
-    width: auto;
-  }
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap {
-    width: 240px; /* Fixed large size */
-    height: 240px;
-    border-radius: 12px;
-    display: block; 
-  }
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap canvas {
-    width: 100% !important; height: 100% !important;
-    object-fit: contain;
-  }
-
-  /* Right Column: Information, buttons, and display, centrally aligned vertically */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-info-col {
-    flex: 1 1 0%; /* Allow Flex to shrink the column instead of pushing the page width */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Left-align all content within right block */
-    text-align: left; 
-    min-width: 0; /* CRITICAL: Prevents long text from creating horizontal scrolling */
-  }
-
-  /* Larger title/artist text on the right */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-name {
-    font-size: 26px; /* Bigger */
-    margin-bottom: 4px;
-    margin-top: 0; 
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
-  }
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-artist {
-    font-size: 18px; /* Bigger */
-    margin-bottom: 24px; /* Space before buttons */
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
-  }
-
-  /* Redefined Button Group: Both on ONE LINE, left aligned */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-btn-group {
-    flex-direction: row; 
-    align-items: center; 
-    gap: 12px; 
-    margin-top: 0;
-    width: auto; 
-    margin-bottom: 24px; 
-    justify-content: flex-start; 
-  }
-
-  /* Updated "Change Cover" button: Force text to stay on one line with nowrap */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-change-cover-btn-landscape {
-    display: flex;
-    flex-direction: row; 
-    align-items: center;
-    justify-content: center;
-    gap: 8px; 
-    padding: 10px 18px; 
-    font-size: 14px; 
-    font-weight: 600; 
-    white-space: nowrap; /* PREVENTS TEXT STACKING */
-    border-radius: 20px;
-    background: #1c1c1e;
-    color: #fff;
-    border: 1px solid #2a2a2a;
-    width: auto; 
-  }
-
-  /* "Edit Info" button: un-bolded, same text size, forced to one line */
-  #fvDetailContent:not(:has(.fv-tracks-list)) .fv-edit-info-btn-landscape {
-    display: flex;
-    flex-direction: row; 
-    align-items: center;
-    justify-content: center;
-    padding: 10px 18px; 
-    font-size: 14px; 
-    font-weight: 500; /* UN-BOLDED */
-    white-space: nowrap; /* PREVENTS TEXT STACKING */
-    border-radius: 20px;
-    background: #1c1c1e;
-    color: #ddd;
-    border: 1px solid #2a2a2a;
-    width: auto;
-  }
-
-  /* Display of Song Information centrally positioned */
-  .fv-song-info-display {
-    width: 100%;
-    max-width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    color: #aaa;
-    font-size: 13px;
-    border-top: 1px solid #222; 
-    padding-top: 16px;
-  }
-  .fv-info-item {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-  }
-  .fv-info-label {
-    font-weight: 500;
-  }
-  .fv-info-value {
-    color: #fff;
-    font-weight: 400;
-  }
-}
-
+/* ===== PORTRAIT SPECIFIC DETAIL VIEW OVERRIDES ===== */
 @media screen and (orientation: portrait) {
-    /* Portrait mode logic reformatting ensures left alignment for text, respecting boundaries, preventing forced centering */
-    #fvDetail { padding-top: max(env(safe-area-inset-top), 20px); }
-    #fvDetailContent {
-        align-items: flex-start;
-        padding-left: max(20px, env(safe-area-inset-left));
-        padding-right: max(20px, env(safe-area-inset-right));
-    }
+    /* Modify Album view safely */
     .fv-detail-hero { flex-direction: row; align-items: center; text-align: left; max-width: none; width: 100%;}
     .fv-detail-cover-wrap { width: 120px; height: 120px; flex-shrink: 0;}
     .fv-detail-cover-wrap canvas { width: 120px; height: 120px; }
@@ -654,8 +515,46 @@ input {
     .fv-btn-group { justify-content: flex-start; }
     .fv-change-cover-btn { max-width: none;}
     .fv-tracks-list { max-width: none;}
-    /* Ensure info display does not break portrait layout */
-    .fv-song-info-display { display: none !important; }
+
+    /* New unified Portrait Song Layout */
+    .fv-song-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding-top: 10px;
+    }
+    .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; margin-bottom: 24px; margin-left: auto; margin-right: auto;}
+    .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+    .fv-song-layout .fv-detail-name { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; text-align: center; }
+    .fv-song-layout .fv-detail-artist { font-size: 16px; color: #888; margin-bottom: 20px; text-align: center; }
+    .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: center; gap: 12px; width: 100%; margin-bottom: 24px; }
+}
+
+/* ===== LANDSCAPE SPECIFIC DETAIL VIEW OVERRIDES ===== */
+@media screen and (orientation: landscape) {
+  /* Album view safely */
+  #fvDetailContent {
+    flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 40px;
+    padding-left: max(env(safe-area-inset-left), 20px); padding-right: max(env(safe-area-inset-right), 20px);
+  }
+  .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
+  .fv-detail-info-col { text-align: center;}
+  .fv-btn-group { justify-content: center; flex-direction: row; }
+
+  #fvBackBtn { font-size: 15px; font-weight: 700; height: 44px; padding: 0 20px; }
+  .glass-close-btn { width: 44px; height: 44px; }
+
+  /* New unified Landscape Song Layout */
+  .fv-song-layout {
+      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 40px; width: 100%; height: 100%;
+      padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
+  }
+  .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; flex-shrink: 0; }
+  .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
+  .fv-song-layout .fv-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
+  .fv-song-layout .fv-detail-artist { font-size: 18px; color: #888; margin-bottom: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
+  .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; margin-bottom: 24px; }
 }
 
 /* Modal styling is maintained, just re-ensuring Pitch Black aesthetic */
@@ -765,7 +664,7 @@ input {
           <button class="fv-seg" data-tab="albums">Albums</button>
         </div>
         <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
         </button>
       </div>
       <div id="fvImportBar">
@@ -783,7 +682,7 @@ input {
           <button id="fvBackBtn">Library</button>
           <div id="fvDetailTitleBar"></div>
           <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close">
-             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
           </button>
         </div>
         <div id="fvDetailContent"></div>
@@ -1326,24 +1225,54 @@ const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm
 const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
 
 async function renderDetailView() {
-  const i = currentItemForDetail; if (!i) return; const c = document.getElementById('fvDetailContent'); c.innerHTML = '';
-  document.getElementById('fvDetailTitleBar').textContent = i.title; 
-  const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
-  h.innerHTML = `<div class="fv-detail-cover-wrap"></div><div class="fv-detail-info-col"><div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div><div class="fv-btn-group"><button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">Change Cover</button><button class="fv-change-cover-btn" onclick="openEditModal()">Edit Info</button></div></div>`;
-  h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 140)); c.appendChild(h);
+  const i = currentItemForDetail; 
+  if (!i) return; 
   
-  if (i.type === 'album') { 
+  const c = document.getElementById('fvDetailContent'); 
+  c.innerHTML = '';
+  
+  if (i.type === 'song') {
+    // Hide the top title bar universally for songs (applies to portrait and landscape)
+    document.getElementById('fvDetailTitleBar').style.display = 'none';
+    
+    // Unified DOM structure for songs - CSS naturally morphs this between Portrait and Landscape
+    const hero = document.createElement('div'); 
+    hero.className = 'fv-song-layout'; 
+    hero.innerHTML = `
+      <div class="fv-detail-cover-wrap"></div>
+      <div class="fv-detail-info-col">
+        <div class="fv-detail-name">${i.title}</div>
+        <div class="fv-detail-artist">${i.artist}</div>
+        <div class="fv-btn-group">
+          <button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="position:relative;top:-1px;"><path d="M8 0a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5a6.5 6.5 0 1 1 6.5-6.5 6.5 6.5 0 0 1-6.5 6.5zM8 3a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm-.75-3.75v1.5h1.5v-1.5h-1.5z" fill="#fff"/></svg>
+            Change Cover
+          </button>
+          <button class="fv-edit-info-btn" onclick="openEditModal()">Edit Info</button>
+        </div>
+        <div class="fv-song-info-display">
+          <div class="fv-info-item"><span class="fv-info-label">Size</span><span class="fv-info-value">${i.size ? formatBytes(i.size) : '—'}</span></div>
+          <div class="fv-info-item"><span class="fv-info-label">Date Added</span><span class="fv-info-value">${i.uploadDate ? formatDate(i.uploadDate) : '—'}</span></div>
+          <div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : formatDate(i.uploadDate)}</span></div>
+        </div>
+      </div>`;
+    hero.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 240)); 
+    c.appendChild(hero);
+  } else {
+    // Legacy view protected for Albums
+    document.getElementById('fvDetailTitleBar').style.display = 'block';
+    document.getElementById('fvDetailTitleBar').textContent = i.title; 
+    
+    const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
+    h.innerHTML = `<div class="fv-detail-cover-wrap"></div><div class="fv-detail-info-col"><div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div><div class="fv-btn-group"><button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">Change Cover</button><button class="fv-change-cover-btn" onclick="openEditModal()">Edit Info</button></div></div>`;
+    h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 140)); c.appendChild(h);
+    
     const tl = document.createElement('div'); tl.className = 'fv-tracks-list';
     i.tracks.forEach(t => { 
       const tr = document.createElement('div'); tr.className = 'fv-track-item'; tr.innerHTML = `<div class="fv-track-name">${t.title}</div>`; tr.onclick = () => playTrack(t.audioId, t.title, i); tl.appendChild(tr); 
     }); 
     const ad = document.createElement('button'); ad.className = 'fv-change-cover-btn'; ad.style.marginTop = '10px'; ad.style.width = '100%'; ad.style.maxWidth = 'none'; ad.textContent = '+ Add Track'; ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); }; tl.appendChild(ad); 
     c.appendChild(tl);
-  } else {
-    // Add Song Info display logic for songs only (not albums)
-    const sd = document.createElement('div'); sd.className = 'fv-song-info-display';
-    sd.innerHTML = `<div class="fv-info-item"><span class="fv-info-label">Size</span><span class="fv-info-value">${i.size ? formatBytes(i.size) : '—'}</span></div><div class="fv-info-item"><span class="fv-info-label">Date Added</span><span class="fv-info-value">${i.uploadDate ? formatDate(i.uploadDate) : '—'}</span></div><div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : '—'}</span></div>`;
-    c.appendChild(sd);
   }
 }
 
