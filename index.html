@@ -125,7 +125,7 @@ input {
   position: absolute;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.38s cubic-bezier(.1,.6,.3,1.0), left 0.38s cubic-bezier(.1,.6,.3,1.0);
+  transition: transform 0.75s cubic-bezier(0.2, 0.85, 0.25, 1), left 0.75s cubic-bezier(0.2, 0.85, 0.25, 1), opacity 0.75s cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 .cf-cover {
   border-radius: 8px;
@@ -446,6 +446,9 @@ input {
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
   #fvHeader { min-height: 64px; }
+  .glass-close-btn { 
+     right: 4px; /* Splits the negative space flawlessly */
+  }
 }
 
 /* Import/New Buttons Bar */
@@ -482,9 +485,9 @@ input {
   #fvDetailHeader { min-height: 64px; }
   #fvDetailTitleBar { display: none !important;}
   #fvBackBtn { 
-     top: 10px; 
+     top: 50%; 
      left: 16px; 
-     transform: none; 
+     transform: translateY(-50%); 
   }
 }
 
