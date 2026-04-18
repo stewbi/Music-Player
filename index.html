@@ -105,14 +105,7 @@ input {
   background: transparent;
   z-index: 1;
 }
-.cf-stage::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,1) 100%);
-  pointer-events: none;
-  z-index: 105;
-}
+/* Removed the linear-gradient overlay from the track itself to clear grey haze */
 .cf-track {
   position: absolute;
   top: 0;
@@ -147,15 +140,9 @@ input {
   border-radius: 8px; 
   overflow: hidden; 
 }
+/* Removed brightness(0.35) filter and linear-gradient fade overlay to clear grey gaze */
 .cf-reflect-canvas {
-  width: 100%; height: 100%; display: block; filter: brightness(0.35); 
-}
-.cf-reflect-fade {
-  position: absolute;
-  top: -1px; left: -1px; right: -1px; bottom: -1px;
-  background: linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0) 100%);
-  pointer-events: none;
-  z-index: 2;
+  width: 100%; height: 100%; display: block; 
 }
 
 /* ===== CENTER UI: TEXT (LANDSCAPE) ===== */
@@ -417,9 +404,9 @@ input {
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
 #fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
 
-/* Sleek Header Logic: Set fixed height to perfectly center absolute buttons */
+/* Sleek Header & Segment Controls: Perfect centering logic */
 #fvHeader, #fvDetailHeader { 
-  display: flex; align-items: center; justify-content: center; padding: 0 20px; position: relative; border-bottom: none; min-height: 64px; 
+  display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
 }
 #fvDetailHeader { justify-content: space-between; }
 
@@ -427,16 +414,17 @@ input {
 .fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
 .fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
 
-/* Glassy Exit Button: Perfectly centered horizontally and vertically */
+/* Glassy Exit Button: perfectly centered vertically and horizontally */
 .glass-close-btn { 
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; border: 1px solid #2a2a2a; z-index: 200;
 }
 
-/* Floating bold Target X Close button targeting Portrait Library menu */
+/* Updated Portrait safe area for file viewer header */
 @media screen and (orientation: portrait) {
-  #fileViewer { padding-top: max(env(safe-area-inset-top), 20px); }
-  #fvHeader { position: relative; width: 100%; display: flex; justify-content: center;}
+  #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
+  #fvHeader { min-height: 74px; }
+  .glass-close-btn { top: 60%; }
 }
 
 /* Import/New Buttons Bar */
@@ -462,12 +450,20 @@ input {
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
 
-/* "Back" button perfectly matched in height to absolute close button to prevent vertical offset */
-#fvBackBtn { 
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
+/* Updated Portrait safe area for detail header and back button position */
+@media screen and (orientation: portrait) {
+  #fvDetail { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
+  #fvDetailHeader { min-height: 74px; }
+  #fvDetailTitleBar { display: none !important;}
 }
 
-#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 70px;}
+/* "Back" button unified with absolute close button height and perfectly centered vertically */
+#fvBackBtn { 
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; min-height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
+  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+}
+
+#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 #fvDetailContent { 
   flex: 1; 
@@ -478,7 +474,7 @@ input {
   padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
 }
 
-/* Original Legacy Detail view for Albums */
+/* Legacy Detail View for Albums */
 .fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
 .fv-detail-cover-wrap { width: 140px; height: 140px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .fv-detail-cover-wrap canvas { width: 140px; height: 140px; display: block; object-fit: cover; }
@@ -522,7 +518,7 @@ input {
         flex-direction: column;
         align-items: center;
         width: 100%;
-        padding-top: 10px;
+        padding-top: max(20px, 30px); /* Pushes content down on portrait */
     }
     .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; margin-bottom: 24px; margin-left: auto; margin-right: auto;}
     .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
@@ -533,19 +529,21 @@ input {
 
 /* ===== LANDSCAPE SPECIFIC DETAIL VIEW OVERRIDES ===== */
 @media screen and (orientation: landscape) {
-  /* Album view safely */
+  /* Restore Album view safely */
   #fvDetailContent {
-    flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 40px;
+    flex-direction: row; align-items: center; justify-content: center; gap: 40px;
     padding-left: max(env(safe-area-inset-left), 20px); padding-right: max(env(safe-area-inset-right), 20px);
+    padding-top: 10px; padding-bottom: 10px; /* Restores vertical position */
+    height: 100%;
   }
   .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
   .fv-detail-info-col { text-align: center;}
   .fv-btn-group { justify-content: center; flex-direction: row; }
 
-  #fvBackBtn { font-size: 15px; font-weight: 700; height: 44px; padding: 0 20px; }
+  #fvBackBtn { font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 20px; }
   .glass-close-btn { width: 44px; height: 44px; }
 
-  /* New unified Landscape Song Layout */
+  /* Restore and Fix Landscape Song Layout */
   .fv-song-layout {
       display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 40px; width: 100%; height: 100%;
       padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
@@ -907,10 +905,6 @@ async function buildCoverFlow() {
     rc.className = 'cf-reflect-canvas';
     ref.appendChild(rc);
     
-    const fade = document.createElement('div'); 
-    fade.className = 'cf-reflect-fade'; 
-    ref.appendChild(fade);
-    
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
     
@@ -1232,10 +1226,6 @@ async function renderDetailView() {
   c.innerHTML = '';
   
   if (i.type === 'song') {
-    // Hide the top title bar universally for songs (applies to portrait and landscape)
-    document.getElementById('fvDetailTitleBar').style.display = 'none';
-    
-    // Unified DOM structure for songs - CSS naturally morphs this between Portrait and Landscape
     const hero = document.createElement('div'); 
     hero.className = 'fv-song-layout'; 
     hero.innerHTML = `
@@ -1256,11 +1246,11 @@ async function renderDetailView() {
           <div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : formatDate(i.uploadDate)}</span></div>
         </div>
       </div>`;
-    hero.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 240)); 
+    // Cover is drawn at full resolution, CSS handles scaling down to prevent greyness
+    hero.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 340)); 
     c.appendChild(hero);
   } else {
     // Legacy view protected for Albums
-    document.getElementById('fvDetailTitleBar').style.display = 'block';
     document.getElementById('fvDetailTitleBar').textContent = i.title; 
     
     const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
