@@ -280,7 +280,6 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Hides specific landscape UI elements, but allows CoverFlow stage and fileViewer to persist */
   #centerUI, #npInfoWrap, #npLibraryWrap, #portCoverWrap { 
     display: none !important; 
   }
@@ -294,7 +293,7 @@ input {
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 100;
     padding-bottom: 160px; 
-    pointer-events: none; /* Allows touches to pass through to CoverFlow underneath */
+    pointer-events: none; 
   }
 
   #portTopText {
@@ -321,46 +320,23 @@ input {
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
   #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
-  #portCoverWrap {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 20px;
-  }
-  
-  .port-canvas-container {
-    width: min(75vw, 340px); 
-    aspect-ratio: 1/1;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
-    border-radius: 4px;
-    background: #1a1a1a;
-  }
-  .port-canvas-container canvas {
-    width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
-  }
-
   #bottomUIWrapper {
     position: absolute;
     bottom: 0; left: 0; width: 100%;
     padding-bottom: max(env(safe-area-inset-bottom, 20px), 40px);
     z-index: 200;
   }
-  #nowPlayingBar {
-    flex-direction: column-reverse; 
-  }
-  #npBarBottom {
-    justify-content: center;
-    margin-bottom: 25px;
-    padding: 0;
-  }
-  #npControls {
-    position: relative; left: 0; transform: none; gap: 60px;
-  }
+  #nowPlayingBar { flex-direction: column-reverse; }
+  #npBarBottom { justify-content: center; margin-bottom: 25px; padding: 0; }
+  #npControls { position: relative; left: 0; transform: none; gap: 60px; }
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
+
+  /* Specifically pushes down the Library for the Portrait Safe Area */
+  #fileViewer {
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
 }
 @media screen and (orientation: landscape) {
   #portLibraryBtn { display: none !important; }
@@ -781,13 +757,8 @@ function layoutCoverFlow() {
   const H = cfStage.offsetHeight || window.innerHeight;
   const cx = W / 2;
   const isPortrait = window.innerHeight > window.innerWidth;
-  
-  // Maintain the equivalent of 75vw scaling in Portrait Mode
   const sz = isPortrait ? Math.min(Math.floor(W * 0.75), 340) : Math.min(Math.floor(H * 0.52), 310);
-  
   const baseTop = Math.max(45, Math.floor((H - sz * 1.5) / 2) - 10);
-  
-  // 1b: Calculate base top and push 10 pixels upwards
   const albumTop = baseTop + 15 - 10; 
   
   cfNodes.forEach((node, i) => {
@@ -810,7 +781,6 @@ function layoutCoverFlow() {
     }
     
     opacity = absDiff > 5 ? 0 : 1;
-    
     node.style.width = sz + 'px';
     node.style.height = sz + 'px';
     node.style.left = x + 'px'; 
@@ -823,14 +793,10 @@ function layoutCoverFlow() {
 
     node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${diff === 0 ? 60 : 0}px)`;
     node.style.zIndex = zIndex; 
-    
-    if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) {
-       node.style.opacity = opacity;
-    }
+    if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) { node.style.opacity = opacity; }
   });
   
   document.getElementById('cfLabel').style.top = '16px';
-  
   const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Open library to import music', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
   titleEl.textContent = item.title || (item._empty ? '—' : item.title); 
@@ -854,29 +820,17 @@ let isScrubbing = false;
 async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   const blob = await dbGet('blobs', trackId).catch(() => null); 
   if (!blob) { showToast('Audio not found'); return; }
-  
   const url = BLOBURL_CACHE[trackId] || (BLOBURL_CACHE[trackId] = URL.createObjectURL(blob));
   audioEl.src = url; 
   currentlyPlayingId = trackId;
+  if (autoPlay) { audioEl.play().catch(()=>{}); isPlaying = true; } else { isPlaying = false; }
 
-  if (autoPlay) {
-    audioEl.play().catch(()=>{}); 
-    isPlaying = true; 
-  } else {
-    isPlaying = false;
-  }
-
-  // Update Landscape UI
   document.getElementById('npThumb').innerHTML = ''; 
   document.getElementById('npThumb').appendChild(await getCoverCanvas(albumItem || {}, 54));
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
-
-  // Update Portrait UI
   document.getElementById('portTitle').textContent = trackTitle || 'Unknown Track';
   document.getElementById('portArtist').textContent = albumItem?.artist || '';
-  
-  // Safe execution of original hidden portrait container setup
   document.getElementById('portCanvasContainer').innerHTML = '';
   document.getElementById('portCanvasContainer').appendChild(await getCoverCanvas(albumItem || {}, 340));
 
@@ -885,17 +839,13 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
       title: trackTitle || 'Unknown Track',
       artist: albumItem?.artist || 'Unknown Artist',
       album: albumItem?.title || '',
-      artwork: currentTrackCoverUrl ? [
-        { src: currentTrackCoverUrl, sizes: '512x512', type: 'image/png' },
-      ] : []
+      artwork: currentTrackCoverUrl ? [{ src: currentTrackCoverUrl, sizes: '512x512', type: 'image/png' }] : []
     });
-
     navigator.mediaSession.setActionHandler('play', () => { audioEl.play().catch(()=>{}); isPlaying = true; updatePlayIcon(); });
     navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); isPlaying = false; updatePlayIcon(); });
     navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
-  
   updatePlayIcon(); 
   renderDetailView();
 }
@@ -909,26 +859,14 @@ function updatePlayIcon() {
 audioEl.ontimeupdate = () => { 
   if (!audioEl.duration) return; 
   const pct = (audioEl.currentTime / audioEl.duration) * 100; 
-  if (!isScrubbing) {
-    npScrubber.value = pct; 
-    npProgressBar.style.width = pct + '%'; 
-  }
+  if (!isScrubbing) { npScrubber.value = pct; npProgressBar.style.width = pct + '%'; }
 };
 
-npScrubber.oninput = () => { 
-  isScrubbing = true; 
-  npProgressBar.style.width = npScrubber.value + '%'; 
-};
-
-npScrubber.onchange = () => { 
-  if (audioEl.duration) { audioEl.currentTime = (npScrubber.value / 100) * audioEl.duration; }
-  isScrubbing = false; 
-};
-
+npScrubber.oninput = () => { isScrubbing = true; npProgressBar.style.width = npScrubber.value + '%'; };
+npScrubber.onchange = () => { if (audioEl.duration) { audioEl.currentTime = (npScrubber.value / 100) * audioEl.duration; } isScrubbing = false; };
 audioEl.addEventListener('ended', () => { playNextTrack(); });
-
 document.getElementById('npPlayBtn').onclick = () => { 
-  if (!currentlyPlayingId) return; // Failsafe if completely empty
+  if (!currentlyPlayingId) return; 
   if (isPlaying) { audioEl.pause(); isPlaying = false; } else { audioEl.play().catch(()=>{}); isPlaying = true; } 
   updatePlayIcon(); 
 };
@@ -948,7 +886,6 @@ async function playNextTrack() {
   if (!currentlyPlayingId) return;
   const { item, idx } = findTrackInLibrary(currentlyPlayingId);
   if (!item) return;
-  
   if (item.type === 'album') {
      if (idx + 1 < item.tracks.length) {
         const next = item.tracks[idx + 1];
@@ -956,7 +893,6 @@ async function playNextTrack() {
         return;
      }
   }
-  
   const itemIdx = library.findIndex(x => x.id === item.id);
   if (itemIdx >= 0 && itemIdx + 1 < library.length) {
      const nextItem = library[itemIdx + 1];
@@ -970,13 +906,11 @@ async function playPrevTrack() {
   if (!currentlyPlayingId) return;
   const { item, idx } = findTrackInLibrary(currentlyPlayingId);
   if (!item) return;
-  
   if (item.type === 'album' && idx > 0) {
      const prev = item.tracks[idx - 1];
      await playTrack(prev.audioId, prev.title, item);
      return;
   }
-  
   const itemIdx = library.findIndex(x => x.id === item.id);
   if (itemIdx > 0) {
      const prevItem = library[itemIdx - 1];
@@ -992,18 +926,16 @@ document.getElementById('npNextBtn').addEventListener('click', playNextTrack);
 async function togglePlayCurrentItem() { 
   const item = library[current]; 
   if (!item || item._empty) return; 
-  
   let belongs = false; 
   if (item.type === 'song' && item.audioId === currentlyPlayingId) belongs = true; 
   if (item.type === 'album' && item.tracks && item.tracks.some(t => t.audioId === currentlyPlayingId)) belongs = true; 
-  
   if (belongs) { 
     if (isPlaying) { audioEl.pause(); isPlaying = false; } else { audioEl.play().catch(()=>{}); isPlaying = true; } 
     updatePlayIcon(); 
   } else { 
     const tId = item.type === 'song' ? item.audioId : (item.tracks && item.tracks.length > 0 ? item.tracks[0].audioId : null);
     const tT = item.type === 'song' ? item.title : (item.tracks && item.tracks.length > 0 ? item.tracks[0].title : null); 
-    if (tId) { playTrack(tId, tT, item); } else { showToast('No audio found in this item'); }
+    if (tId) { playTrack(tId, tT, item); } else { showToast('No audio found'); }
   } 
 }
 
@@ -1129,66 +1061,44 @@ document.getElementById('coverInput').onchange = async e => {
   const bId = genId(); await dbPut('blobs', bId, f); const i = library.find(x => x.id === coverChangeTargetId); i.coverId = bId; 
   await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(); e.target.value = '';
 };
-
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
    INITIALIZATION & TOUCH EVENTS
 ================================================================ */
-// COVERFLOW SWIPE (NOW WORKS FOR BOTH LANDSCAPE & PORTRAIT)
 let touchStartX = 0;
 cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
 cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
 let mouseX = 0, dragging = false;
 cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
 window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
-
 window.addEventListener('resize', () => { clearTimeout(window.resizeTimeout); window.resizeTimeout = setTimeout(layoutCoverFlow, 100); });
 
 async function init() { 
   await openDB(); 
   const saved = await dbGetAll('albums'); 
   if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
-
-  // Map out all playable tracks inside the library to select one at random
   const allTracks = [];
   library.forEach(item => {
-    if (item.type === 'song' && item.audioId) {
-        allTracks.push({ trackId: item.audioId, trackTitle: item.title, albumItem: item });
-    } else if (item.type === 'album' && item.tracks) {
-        item.tracks.forEach(t => {
-            if (t.audioId) allTracks.push({ trackId: t.audioId, trackTitle: t.title, albumItem: item });
-        });
-    }
+    if (item.type === 'song' && item.audioId) { allTracks.push({ trackId: item.audioId, trackTitle: item.title, albumItem: item }); } 
+    else if (item.type === 'album' && item.tracks) { item.tracks.forEach(t => { if (t.audioId) allTracks.push({ trackId: t.audioId, trackTitle: t.title, albumItem: item }); }); }
   });
-
-  // Load a random track to bypass the empty start screen (if tracks exist)
   if (allTracks.length > 0) {
     const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
-    // Make sure Cover Flow's current position matches the selected track's album
     current = Math.max(0, library.findIndex(x => x.id === randomTrack.albumItem.id));
-    // Load it into the UI silently without auto-playing
-    await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.albumItem, false);
+    await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.randomTrack?.albumItem || randomTrack.albumItem, false);
   } else {
-    // True fresh start (library is completely empty)
     current = 0;
     document.getElementById('portCanvasContainer').appendChild(drawPlaceholderCover(340, 0));
   }
-  
   setTimeout(buildCoverFlow, 150);
-
-  // Handle the fade-out on startup
   setTimeout(() => {
     const fadeScreen = document.getElementById('startupFade');
-    if(fadeScreen) {
-      fadeScreen.style.opacity = '0';
-      setTimeout(() => fadeScreen.style.display = 'none', 1000);
-    }
+    if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
   }, 100);
 }
 window.onload = init;
-
-if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(() => console.log('Offline mode activated!')).catch(err => console.log('Offline setup failed: ', err)); }); }
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); }); }
 </script>
 </body>
 </html>
