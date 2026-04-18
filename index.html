@@ -105,7 +105,7 @@ input {
   background: transparent;
   z-index: 1;
 }
-/* No gradient overlay on the stage */
+/* Removed the linear-gradient overlay from the track itself to clear grey haze */
 .cf-track {
   position: absolute;
   top: 0;
@@ -140,7 +140,7 @@ input {
   border-radius: 8px; 
   overflow: hidden; 
 }
-/* Reflection canvas has no filter; is clean. Fade overlay provides the fade. */
+/* Removed brightness(0.35) filter and linear-gradient fade overlay to clear grey gaze */
 .cf-reflect-canvas {
   width: 100%; height: 100%; display: block; 
 }
@@ -404,20 +404,27 @@ input {
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
 #fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
 
-/* Sleek Header & Segment Controls */
-#fvHeader { display: flex; align-items: center; padding: 16px 20px 8px; justify-content: center; position: relative; border-bottom: none; }
+/* Sleek Header & Segment Controls: Perfect centering logic */
+#fvHeader, #fvDetailHeader { 
+  display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
+}
+#fvDetailHeader { justify-content: space-between; }
+
 #fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
 .fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
 .fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
 
-/* Glassy Exit Button: Unified across orientations and tabs */
-.glass-close-btn { position: absolute; right: 20px; top: 16px; width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: bold; border: 1px solid #2a2a2a; z-index: 200;}
+/* Glassy Exit Button: perfectly centered vertically and horizontally */
+.glass-close-btn { 
+  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; border: 1px solid #2a2a2a; z-index: 200;
+}
 
-/* Floating, bold Target X Close button targeting Portrait Library menu *only* */
+/* Updated Portrait safe area for file viewer header */
 @media screen and (orientation: portrait) {
-  #fileViewer { padding-top: max(env(safe-area-inset-top), 20px); }
-  #fvHeader { position: relative; width: 100%; display: flex; justify-content: center;}
-  #fvCloseBtn { position: absolute; top: 10px; right: 20px; font-weight: bold;}
+  #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
+  #fvHeader { min-height: 74px; }
+  .glass-close-btn { top: 60%; }
 }
 
 /* Import/New Buttons Bar */
@@ -442,16 +449,22 @@ input {
 /* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
-#fvDetailHeader { display: flex; align-items: center; padding: 14px 20px; gap: 8px; position: relative; border-bottom: none;}
 
-/* "Back" button unified with Library text and glassy button aesthetic */
-#fvBackBtn { 
-  display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
+/* Updated Portrait safe area for detail header and back button position */
+@media screen and (orientation: portrait) {
+  #fvDetail { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
+  #fvDetailHeader { min-height: 74px; }
+  #fvDetailTitleBar { display: none !important;}
 }
 
-#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 70px;}
+/* "Back" button unified with absolute close button height and perfectly centered vertically */
+#fvBackBtn { 
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; min-height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
+  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+}
 
-/* Detail view content base */
+#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 #fvDetailContent { 
   flex: 1; 
   overflow-y: auto; 
@@ -461,7 +474,7 @@ input {
   padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
 }
 
-/* Base styles for Album views */
+/* Legacy Detail View for Albums */
 .fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
 .fv-detail-cover-wrap { width: 140px; height: 140px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .fv-detail-cover-wrap canvas { width: 140px; height: 140px; display: block; object-fit: cover; }
@@ -469,52 +482,77 @@ input {
 .fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-bottom: 6px; }
 .fv-detail-artist { font-size: 16px; color: #888; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 .fv-btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 16px; width: 100%;}
-.fv-change-cover-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; flex: 1; max-width: 140px;}
 
-.fv-tracks-list { width: 100%; max-width: 320px;}
-.fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
-.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;}
-
-/* ===== CUSTOM CLASS STYLING FOR UNIFIED SONG VIEWS ===== */
-/* Common Custom Button Styles for Songs */
-.fv-change-cover-btn-landscape {
-  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; border-radius: 20px; background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; width: auto; 
+/* SHARED Custom Button Styles for Songs */
+.fv-change-cover-btn, .fv-edit-info-btn { 
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; border-radius: 20px; background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; width: auto; max-width: fit-content;
 }
-.fv-edit-info-btn-landscape {
-  display: flex; flex-direction: row; align-items: center; justify-content: center; padding: 10px 18px; font-size: 14px; font-weight: 500; white-space: nowrap; border-radius: 20px; background: #1c1c1e; color: #ddd; border: 1px solid #2a2a2a; width: auto;
-}
+.fv-edit-info-btn { font-weight: 500; color: #ddd; }
 
-/* Common Song Info Styling */
+/* SHARED Song Info Styling */
 .fv-song-info-display {
-  display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; border-top: 1px solid #222; padding-top: 16px;
+  display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; border-top: 1px solid #222; padding-top: 16px; margin: 0 auto;
 }
 .fv-info-item { display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: #aaa; }
 .fv-info-label { font-weight: 500; }
 .fv-info-value { color: #fff; font-weight: 400; }
 
-/* Landscape unified base: NO TEXT WRAP for title/artist *and* centering base */
-@media screen and (orientation: landscape) {
-  #fvDetailContent { flex-direction: row; align-items: center; justify-content: center; }
-  #fvDetailTitleBar { display: none; }
-  .fv-detail-hero { flex: 0 0 auto; align-items: center; margin: 0; width: auto; }
-  .fv-detail-cover-wrap { width: 240px; height: 240px; border-radius: 12px; }
-  .fv-detail-info-col { 
-    flex: 1 1 0%; display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; 
-  }
-  .fv-detail-name { font-size: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-  .fv-detail-artist { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-bottom: 24px;}
-  .fv-btn-group { flex-direction: row; align-items: center; gap: 12px; margin-top: 0; width: auto; margin-bottom: 24px; justify-content: flex-start; }
-}
+.fv-tracks-list { width: 100%; max-width: 320px;}
+.fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
+.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;}
 
-/* Portrait unified base: safe top area and centering base */
+/* ===== PORTRAIT SPECIFIC DETAIL VIEW OVERRIDES ===== */
 @media screen and (orientation: portrait) {
-    #fvDetail { padding-top: max(env(safe-area-inset-top), 20px); }
-    #fvDetailContent { align-items: flex-start; }
-    .fv-detail-hero { flex-direction: row; align-items: center; text-align: left; width: 100%;}
+    /* Modify Album view safely */
+    .fv-detail-hero { flex-direction: row; align-items: center; text-align: left; max-width: none; width: 100%;}
     .fv-detail-cover-wrap { width: 120px; height: 120px; flex-shrink: 0;}
+    .fv-detail-cover-wrap canvas { width: 120px; height: 120px; }
     .fv-detail-info-col { text-align: left; }
     .fv-btn-group { justify-content: flex-start; }
+    .fv-change-cover-btn { max-width: none;}
     .fv-tracks-list { max-width: none;}
+
+    /* New unified Portrait Song Layout */
+    .fv-song-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding-top: max(20px, 30px); /* Pushes content down on portrait */
+    }
+    .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; margin-bottom: 24px; margin-left: auto; margin-right: auto;}
+    .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+    .fv-song-layout .fv-detail-name { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; text-align: center; }
+    .fv-song-layout .fv-detail-artist { font-size: 16px; color: #888; margin-bottom: 20px; text-align: center; }
+    .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: center; gap: 12px; width: 100%; margin-bottom: 24px; }
+}
+
+/* ===== LANDSCAPE SPECIFIC DETAIL VIEW OVERRIDES ===== */
+@media screen and (orientation: landscape) {
+  /* Restore Album view safely */
+  #fvDetailContent {
+    flex-direction: row; align-items: center; justify-content: center; gap: 40px;
+    padding-left: max(env(safe-area-inset-left), 20px); padding-right: max(env(safe-area-inset-right), 20px);
+    padding-top: 10px; padding-bottom: 10px; /* Restores vertical position */
+    height: 100%;
+  }
+  .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
+  .fv-detail-info-col { text-align: center;}
+  .fv-btn-group { justify-content: center; flex-direction: row; }
+
+  #fvBackBtn { font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 20px; }
+  .glass-close-btn { width: 44px; height: 44px; }
+
+  /* Restore and Fix Landscape Song Layout */
+  .fv-song-layout {
+      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 40px; width: 100%; height: 100%;
+      padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
+  }
+  .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; flex-shrink: 0; }
+  .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
+  .fv-song-layout .fv-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
+  .fv-song-layout .fv-detail-artist { font-size: 18px; color: #888; margin-bottom: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
+  .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; margin-bottom: 24px; }
 }
 
 /* Modal styling is maintained, just re-ensuring Pitch Black aesthetic */
@@ -624,7 +662,7 @@ input {
           <button class="fv-seg" data-tab="albums">Albums</button>
         </div>
         <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
         </button>
       </div>
       <div id="fvImportBar">
@@ -642,7 +680,7 @@ input {
           <button id="fvBackBtn">Library</button>
           <div id="fvDetailTitleBar"></div>
           <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close">
-             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
           </button>
         </div>
         <div id="fvDetailContent"></div>
@@ -812,17 +850,15 @@ async function getCoverCanvas(item, size) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement('canvas'); 
-          // Always draw at original resolution (item size, likely ~200-300px)
-          const actualSize = Math.max(img.width, img.height);
-          c.width = actualSize; 
-          c.height = actualSize;
+          c.width = size; 
+          c.height = size;
           const ctx = c.getContext('2d');
           
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
           
-          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, actualSize, actualSize);
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
           res(c);
         };
         img.onerror = () => res(drawPlaceholderCover(size, item._slot || 0));
