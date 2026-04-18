@@ -95,7 +95,7 @@ input {
   min-width: 0;
 }
 
-/* ===== COVER FLOW STAGE (LANDSCAPE) ===== */
+/* ===== COVER FLOW STAGE ===== */
 .cf-stage {
   position: absolute;
   top: 0;
@@ -280,31 +280,44 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Hide Landscape elements AND the file viewer entirely */
-  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap, #fileViewer { 
+  /* Hides specific landscape UI elements, but allows CoverFlow stage and fileViewer to persist */
+  #centerUI, #npInfoWrap, #npLibraryWrap, #portCoverWrap { 
     display: none !important; 
   }
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
 
-  /* Display Portrait elements with proper spacing constraints */
   #portView {
     display: flex;
     flex-direction: column;
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 100;
-    /* Accounts for the absolute bottom UI to perfectly center the remaining space */
     padding-bottom: 160px; 
+    pointer-events: none; /* Allows touches to pass through to CoverFlow underneath */
   }
 
   #portTopText {
-    /* Dropped down ~25px */
     padding-top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
     text-align: center;
     flex: 0 0 auto;
     padding-left: 20px; padding-right: 20px;
+    pointer-events: auto;
   }
+  
+  #portLibraryBtn {
+    position: absolute;
+    top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    pointer-events: auto;
+  }
+
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
   #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
@@ -316,12 +329,10 @@ input {
     padding: 0 20px;
   }
   
-  /* Generates the sleek glass reflection underneath the cover art */
   .port-canvas-container {
     width: min(75vw, 340px); 
     aspect-ratio: 1/1;
     box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    /* Brighter vertical-mode reflection */
     -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
     border-radius: 4px;
     background: #1a1a1a;
@@ -330,7 +341,6 @@ input {
     width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
   }
 
-  /* Reorganize shared controls to match target UI */
   #bottomUIWrapper {
     position: absolute;
     bottom: 0; left: 0; width: 100%;
@@ -338,7 +348,7 @@ input {
     z-index: 200;
   }
   #nowPlayingBar {
-    flex-direction: column-reverse; /* Flips scrubber to bottom, controls to top */
+    flex-direction: column-reverse; 
   }
   #npBarBottom {
     justify-content: center;
@@ -351,6 +361,9 @@ input {
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
+}
+@media screen and (orientation: landscape) {
+  #portLibraryBtn { display: none !important; }
 }
 
 
@@ -452,6 +465,14 @@ input {
          <div id="portTitle">—</div>
          <div id="portArtist">Rotate to open Library</div>
       </div>
+      <button id="portLibraryBtn" aria-label="Open Library">
+         <svg width="24" height="24" viewBox="0 0 15 15" fill="none">
+           <rect x="0.5" y="2.5" width="14" height="10" rx="1.5" stroke="#fff" stroke-width="1.1"/>
+           <rect x="2.5" y="4.5" width="4" height="6" rx="0.5" fill="#ddd"/>
+           <line x1="8" y1="5.5" x2="12" y2="5.5" stroke="#ddd" stroke-width="1.1" stroke-linecap="round"/>
+           <line x1="8" y1="7.5" x2="12" y2="7.5" stroke="#aaa" stroke-width="1.1" stroke-linecap="round"/>
+         </svg>
+      </button>
       <div id="portCoverWrap">
          <div class="port-canvas-container" id="portCanvasContainer"></div>
       </div>
@@ -759,10 +780,15 @@ function layoutCoverFlow() {
   const W = cfStage.offsetWidth || window.innerWidth;
   const H = cfStage.offsetHeight || window.innerHeight;
   const cx = W / 2;
-  const sz = Math.min(Math.floor(H * 0.52), 310);
+  const isPortrait = window.innerHeight > window.innerWidth;
+  
+  // Maintain the equivalent of 75vw scaling in Portrait Mode
+  const sz = isPortrait ? Math.min(Math.floor(W * 0.75), 340) : Math.min(Math.floor(H * 0.52), 310);
   
   const baseTop = Math.max(45, Math.floor((H - sz * 1.5) / 2) - 10);
-  const albumTop = baseTop + 15; 
+  
+  // 1b: Calculate base top and push 10 pixels upwards
+  const albumTop = baseTop + 15 - 10; 
   
   cfNodes.forEach((node, i) => {
     const diff = i - current;
@@ -849,6 +875,8 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   // Update Portrait UI
   document.getElementById('portTitle').textContent = trackTitle || 'Unknown Track';
   document.getElementById('portArtist').textContent = albumItem?.artist || '';
+  
+  // Safe execution of original hidden portrait container setup
   document.getElementById('portCanvasContainer').innerHTML = '';
   document.getElementById('portCanvasContainer').appendChild(await getCoverCanvas(albumItem || {}, 340));
 
@@ -983,6 +1011,9 @@ async function togglePlayCurrentItem() {
    FILE VIEWER MENU & SWIPE TO DELETE
 ================================================================ */
 document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); renderAllTabs(); };
+if(document.getElementById('portLibraryBtn')) {
+  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); renderAllTabs(); };
+}
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
 
@@ -1104,23 +1135,13 @@ function showToast(m) { const t = document.getElementById('toast'); t.textConten
 /* ================================================================
    INITIALIZATION & TOUCH EVENTS
 ================================================================ */
-// COVERFLOW SWIPE (LANDSCAPE)
+// COVERFLOW SWIPE (NOW WORKS FOR BOTH LANDSCAPE & PORTRAIT)
 let touchStartX = 0;
 cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
 cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
 let mouseX = 0, dragging = false;
 cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
 window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
-
-// VERTICAL ALBUM ART SWIPE (PORTRAIT)
-const portCoverWrap = document.getElementById('portCoverWrap');
-let portSwipeStartX = 0;
-portCoverWrap.addEventListener('touchstart', e => { portSwipeStartX = e.touches[0].clientX; }, {passive: true});
-portCoverWrap.addEventListener('touchend', e => { 
-  const dx = e.changedTouches[0].clientX - portSwipeStartX; 
-  if (dx > 40) playPrevTrack(); 
-  else if (dx < -40) playNextTrack(); 
-});
 
 window.addEventListener('resize', () => { clearTimeout(window.resizeTimeout); window.resizeTimeout = setTimeout(layoutCoverFlow, 100); });
 
