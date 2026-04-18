@@ -398,14 +398,22 @@ input {
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
-
-  /* Library Content Fade (Portrait Only) */
-  #fvContent, #fvDetailContent {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 90px), transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 90px), transparent 100%);
+  
+  /* FIXED FADE OVERLAY - iPhone 17 Pro Fix */
+  #fileViewer::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: max(120px, env(safe-area-inset-bottom) + 80px);
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 90%);
+    pointer-events: none;
+    z-index: 500;
   }
 }
 
+@media screen and (orientation: landscape) {
+  #fileViewer::after { display: none; }
+}
 
 /* ===== FILE VIEWER & UI STYLING UPDATE (PITCH BLACK + GLASS) ===== */
 #fileViewer {
@@ -423,7 +431,6 @@ input {
 #fvHeader, #fvDetailHeader { 
   display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
 }
-#fvDetailHeader { justify-content: space-between; }
 
 #fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
 .fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
@@ -439,11 +446,6 @@ input {
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
   #fvHeader { min-height: 64px; }
-  .glass-close-btn { 
-     top: 10px; 
-     right: 8px; /* Balanced perfectly between Albums and screen edge */
-     transform: none; 
-  }
 }
 
 /* Import/New Buttons Bar */
@@ -453,7 +455,7 @@ input {
 #fvContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
   -ms-overflow-style: none; scrollbar-width: none;
-  padding-bottom: 90px; /* Reduced to safely wrap Home Indicator and maintain fade overlay */
+  padding-bottom: max(140px, env(safe-area-inset-bottom, 20px) + 100px); /* Massive clearance to clear the fade mask entirely */
 }
 #fvContent::-webkit-scrollbar { display: none; }
 .fv-tab { display: none; }
@@ -496,7 +498,7 @@ input {
 
 #fvDetailContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; 
-  padding: 18px 20px 90px 20px;
+  padding: 18px 20px max(140px, env(safe-area-inset-bottom) + 100px) 20px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 #fvDetailContent::-webkit-scrollbar { display: none; }
@@ -567,7 +569,6 @@ input {
   .fv-btn-group { justify-content: center; flex-direction: row; }
 
   #fvBackBtn { font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 20px; }
-  .glass-close-btn { width: 44px; height: 44px; }
 
   /* Restore and Fix Landscape Song Layout */
   .fv-song-layout {
@@ -708,9 +709,6 @@ input {
         <div id="fvDetailHeader">
           <button id="fvBackBtn">Library</button>
           <div id="fvDetailTitleBar"></div>
-          <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close">
-             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
-          </button>
         </div>
         <div id="fvDetailContent"></div>
       </div>
@@ -1245,7 +1243,6 @@ if(document.getElementById('portLibraryBtn')) {
 }
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
-document.getElementById('fvDetailCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 
 document.querySelectorAll('.fv-seg').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1412,47 +1409,16 @@ document.getElementById('coverInput').onchange = async e => {
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS (VELOCITY PHYSICS)
+   INITIALIZATION & TOUCH EVENTS
 ================================================================ */
-let swipeStartX = 0, lastSwipeX = 0, lastSwipeTime = 0, swipeVelocity = 0, isSwipingStage = false;
 
-function handleSwipeStart(x) {
-  swipeStartX = x; lastSwipeX = x; lastSwipeTime = Date.now(); isSwipingStage = true;
-}
+let touchStartX = 0;
+cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
+cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
 
-function handleSwipeMove(x) {
-  if (!isSwipingStage) return;
-  const now = Date.now(); const dt = now - lastSwipeTime;
-  if (dt > 0) { swipeVelocity = (x - lastSwipeX) / dt; }
-  lastSwipeX = x; lastSwipeTime = now;
-}
-
-function handleSwipeEnd(x) {
-  if (!isSwipingStage) return;
-  isSwipingStage = false;
-  const dx = x - swipeStartX; const absDx = Math.abs(dx); const absVel = Math.abs(swipeVelocity);
-
-  if (absDx > 20) {
-    let skip = 1;
-    if (absVel > 0.35) { 
-      skip = Math.max(1, Math.round(absVel * 3.8)); 
-    } 
-    else if (absDx > 150) { 
-      skip = Math.max(1, Math.round(absDx / 70)); 
-    } 
-    const dir = dx < 0 ? 1 : -1;
-    setCurrent(current + (dir * skip));
-  }
-  swipeVelocity = 0;
-}
-
-cfStage.addEventListener('touchstart', e => handleSwipeStart(e.touches[0].clientX), {passive: true});
-cfStage.addEventListener('touchmove', e => handleSwipeMove(e.touches[0].clientX), {passive: true});
-cfStage.addEventListener('touchend', e => handleSwipeEnd(e.changedTouches[0].clientX));
-cfStage.addEventListener('mousedown', e => { handleSwipeStart(e.clientX); });
-window.addEventListener('mousemove', e => { if (isSwipingStage) handleSwipeMove(e.clientX); });
-window.addEventListener('mouseup', e => { if (isSwipingStage) handleSwipeEnd(e.clientX); });
-
+let mouseX = 0, dragging = false;
+cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
+window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
