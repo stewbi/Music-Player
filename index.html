@@ -411,6 +411,7 @@ input {
   transform: translateY(100%); transition: transform 0.38s cubic-bezier(.32,.72,0,1);
   border-radius: 12px 12px 0 0; padding-left: max(env(safe-area-inset-left), 12px);
   padding-right: max(env(safe-area-inset-right), 12px);
+  overflow-x: hidden; /* Locks horizontal scroll */
 }
 #fileViewer.open { transform: translateY(0); }
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
@@ -436,7 +437,7 @@ input {
 #fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; }
 .fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #1c1c1e; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; color: #fff; }
 
-#fvContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+#fvContent { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; }
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
@@ -452,7 +453,7 @@ input {
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; }
 
 /* ===== DETAIL VIEW (REFORMATTED & NO PLAY BUTTON) ===== */
-#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; }
+#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
 #fvDetailHeader { display: flex; align-items: center; padding: 14px 20px; gap: 8px; position: relative; border-bottom: none;}
 
@@ -467,15 +468,16 @@ input {
 #fvDetailContent { 
   flex: 1; 
   overflow-y: auto; 
+  overflow-x: hidden; /* Rigid horizontal lock to completely prevent side-to-side scrolling */
   -webkit-overflow-scrolling: touch; 
   display: flex; flex-direction: column; align-items: center; 
   padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
 }
 
-.fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 320px;}
+.fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
 .fv-detail-cover-wrap { width: 140px; height: 140px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .fv-detail-cover-wrap canvas { width: 140px; height: 140px; display: block; object-fit: cover; }
-.fv-detail-info-col { width: 100%; }
+.fv-detail-info-col { width: 100%; min-width: 0; }
 .fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-bottom: 6px; }
 .fv-detail-artist { font-size: 16px; color: #888; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 .fv-btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 16px; width: 100%;}
@@ -502,13 +504,13 @@ input {
     flex-direction: row;
     align-items: center; /* Vertically center the two columns */
     justify-content: center; /* Horizontally center */
-    /* Add bottom padding buffer to push the vertically centered elements UP to the true visual center */
+    /* Bottom padding buffer pushes the vertically centered elements UP to the true visual center */
     padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
     gap: max(env(safe-area-inset-left, 0px), 40px); /* Spacious gap between art and text */
     height: 100%;
   }
 
-  /* Bigger, bolder buttons that match 'Change Cover' font attributes */
+  /* Bigger buttons */
   #fvBackBtn {
     font-size: 15px;
     font-weight: 700;
@@ -517,7 +519,6 @@ input {
   #fvCloseBtn, #fvDetailCloseBtn {
     width: 44px;
     height: 44px;
-    font-size: 20px;
   }
 
   /* Remove song title text from top for cleaner look */
@@ -530,6 +531,7 @@ input {
     flex: 0 0 auto;
     align-items: center;
     margin: 0;
+    width: auto;
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-cover-wrap {
     width: 240px; /* Fixed large size */
@@ -544,12 +546,12 @@ input {
 
   /* Right Column: Information, buttons, and display, centrally aligned vertically */
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-info-col {
-    flex: 0 0 auto;
+    flex: 1 1 0%; /* Allow Flex to shrink the column instead of pushing the page width */
     display: flex;
     flex-direction: column;
     align-items: flex-start; /* Left-align all content within right block */
     text-align: left; 
-    min-width: 260px; /* Prevent shrinking/wrapping */
+    min-width: 0; /* CRITICAL: Prevents long text from creating horizontal scrolling */
   }
 
   /* Larger title/artist text on the right */
@@ -557,10 +559,12 @@ input {
     font-size: 26px; /* Bigger */
     margin-bottom: 4px;
     margin-top: 0; 
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
   }
   #fvDetailContent:not(:has(.fv-tracks-list)) .fv-detail-artist {
     font-size: 18px; /* Bigger */
     margin-bottom: 24px; /* Space before buttons */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
   }
 
   /* Redefined Button Group: Both on ONE LINE, left aligned */
@@ -760,7 +764,9 @@ input {
           <button class="fv-seg" data-tab="songs">Songs</button>
           <button class="fv-seg" data-tab="albums">Albums</button>
         </div>
-        <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close"><b>✕</b></button>
+        <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+        </button>
       </div>
       <div id="fvImportBar">
         <button class="fv-import-btn" id="importSongBtn">Import Song</button>
@@ -776,7 +782,9 @@ input {
         <div id="fvDetailHeader">
           <button id="fvBackBtn">Library</button>
           <div id="fvDetailTitleBar"></div>
-          <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close"><b>✕</b></button>
+          <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close">
+             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+          </button>
         </div>
         <div id="fvDetailContent"></div>
       </div>
