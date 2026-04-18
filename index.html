@@ -125,7 +125,7 @@ input {
   position: absolute;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.38s cubic-bezier(.1,.6,.3,1.0), left 0.38s cubic-bezier(.1,.6,.3,1.0); /* Smoother overall transitions */
+  transition: transform 0.38s cubic-bezier(.1,.6,.3,1.0), left 0.38s cubic-bezier(.1,.6,.3,1.0);
 }
 .cf-cover {
   border-radius: 8px;
@@ -158,7 +158,7 @@ input {
   z-index: 2;
 }
 
-/* ===== CENTER UI: TEXT (LANDSCAPE) + MARQUEE ===== */
+/* ===== CENTER UI: TEXT (LANDSCAPE) ===== */
 #centerUI {
   position: absolute;
   left: 0;
@@ -179,22 +179,18 @@ input {
   gap: 10px; 
 }
 
-/* Text Mask & Marquee logic for Center UI */
-.cf-text-mask {
-  display: flex; flex-direction: column; align-items: center;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
-}
-.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; justify-content: center;}
+/* Text containers are now static in Landscape Center */
+#cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+#cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Global marquee animation definition, recycled for dynamic elements */
 .marquee-text { white-space: nowrap; display: inline-block; }
-.marquee-text.scroll { animation: marquee 5.5s linear infinite alternate; } /* Match lower NP speed */
+.marquee-text.scroll { animation: marquee 5.5s linear infinite alternate; }
 
 @keyframes marquee {
   0%, 12% { transform: translateX(0); }
   88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
 }
-#cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; }
-#cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; }
 
 /* ===== PORTRAIT SPECIFIC VIEW ===== */
 #portView {
@@ -262,15 +258,18 @@ input {
 }
 
 /* Left: Track Info Thumbnail (LANDSCAPE) */
-#npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; }
+/* Apply max-width constraint and fixed gap for Landscape text */
+#npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; max-width: 200px; padding-right: 20px;}
 #npThumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: #1a1a1a; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
+/* NP text needs mask for scrolling */
 #npInfo { 
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
 }
-/* Recycled marquee style from Center UI */
+.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; }
+
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
 
@@ -320,16 +319,21 @@ input {
     pointer-events: none; 
   }
 
+  /* Portrait Top Text: Title (Dynamic), Artist (Static) */
   #portTopText {
     padding-top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
     text-align: center;
     flex: 0 0 auto;
     padding-left: 20px; padding-right: 20px;
     pointer-events: auto;
-    /* Reuse Center UI text fade bounds */
+    overflow: hidden;
+  }
+  
+  /* Apply mask ONLY to title marquee-wrap in portrait */
+  #portTitleWrap {
     -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
     mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
-    overflow: hidden;
+    overflow: visible; display: flex; align-items: center; justify-content: center;
   }
   
   #portLibraryBtn {
@@ -345,8 +349,10 @@ input {
     pointer-events: auto;
   }
 
+  /* Dynamic Title */
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
-  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); }
+  /* Static Artist */
+  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
   #bottomUIWrapper {
     position: absolute;
@@ -462,16 +468,16 @@ input {
     </div>
 
     <div id="centerUI">
-      <div id="cfLabel" class="cf-text-mask">
-        <div class="marquee-wrap"><p id="cfTitle" class="marquee-text">CoverFlow</p></div>
-        <div class="marquee-wrap"><p id="cfArtist" class="marquee-text">Import music to begin</p></div>
+      <div id="cfLabel">
+        <p id="cfTitle">CoverFlow</p>
+        <p id="cfArtist">Open library to import music</p>
       </div>
     </div>
 
     <div id="portView">
       <div id="portTopText">
-         <div class="marquee-wrap" style="justify-content: center;"><div id="portTitle" class="marquee-text">—</div></div>
-         <div class="marquee-wrap" style="justify-content: center;"><div id="portArtist" class="marquee-text">Rotate to open Library</div></div>
+         <div id="portTitleWrap"><div id="portTitle" class="marquee-text">—</div></div>
+         <div id="portArtistWrap"><p id="portArtist">Rotate to open Library</p></div>
       </div>
       <button id="portLibraryBtn" aria-label="Open Library">
          <svg width="24" height="24" viewBox="0 0 15 15" fill="none">
@@ -1177,7 +1183,7 @@ function handleSwipeEnd(x) {
     } 
 
     const dir = dx < 0 ? 1 : -1;
-    // Lower speed overall onglide transitions in CSS above (.38s cubic-bezier(.1,.6,.3,1.0))
+    // Gliding transition speed in CSS above (.38s cubic-bezier(.1,.6,.3,1.0))
     setCurrent(current + (dir * skip));
   }
   swipeVelocity = 0;
