@@ -95,7 +95,7 @@ input {
   min-width: 0;
 }
 
-/* ===== COVER FLOW STAGE (LANDSCAPE) ===== */
+/* ===== COVER FLOW STAGE ===== */
 .cf-stage {
   position: absolute;
   top: 0;
@@ -105,7 +105,14 @@ input {
   background: transparent;
   z-index: 1;
 }
-/* Removed the linear-gradient overlay from the track itself to clear grey haze */
+.cf-stage::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,1) 100%);
+  pointer-events: none;
+  z-index: 105;
+}
 .cf-track {
   position: absolute;
   top: 0;
@@ -118,7 +125,7 @@ input {
   position: absolute;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.42s cubic-bezier(.25,.8,.25,1), left 0.42s cubic-bezier(.25,.8,.25,1);
+  transition: transform 0.38s cubic-bezier(.1,.6,.3,1.0), left 0.38s cubic-bezier(.1,.6,.3,1.0);
 }
 .cf-cover {
   border-radius: 8px;
@@ -140,9 +147,15 @@ input {
   border-radius: 8px; 
   overflow: hidden; 
 }
-/* Removed brightness(0.35) filter and linear-gradient fade overlay to clear grey gaze */
 .cf-reflect-canvas {
-  width: 100%; height: 100%; display: block; 
+  width: 100%; height: 100%; display: block; filter: brightness(0.35); 
+}
+.cf-reflect-fade {
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  background: linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ===== CENTER UI: TEXT (LANDSCAPE) ===== */
@@ -166,23 +179,17 @@ input {
   gap: 10px; 
 }
 
-/* Text containers are static in Landscape Center */
+/* Text containers are now static in Landscape Center */
 #cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 #cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Global marquee animation definition */
-.marquee-text { display: inline-block; white-space: nowrap; }
+/* Global marquee animation definition, recycled for dynamic elements */
+.marquee-text { white-space: nowrap; display: inline-block; }
 .marquee-text.scroll { animation: marquee 5.5s linear infinite alternate; }
 
 @keyframes marquee {
   0%, 12% { transform: translateX(0); }
   88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
-}
-
-/* Conditional Mask Applied ONLY when Overflow Happens */
-.masked-overflow {
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%) !important;
-  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%) !important;
 }
 
 /* ===== PORTRAIT SPECIFIC VIEW ===== */
@@ -251,15 +258,17 @@ input {
 }
 
 /* Left: Track Info Thumbnail (LANDSCAPE) */
+/* Apply max-width constraint and fixed gap for Landscape text */
 #npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; max-width: 200px; padding-right: 20px;}
 #npThumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: #1a1a1a; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
+/* NP text needs mask for scrolling */
 #npInfo { 
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
 }
-#npInfo .marquee-wrap { 
-  width: 100%; display: block; white-space: nowrap; overflow: hidden; text-align: left;
-}
+.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; }
 
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
@@ -290,44 +299,41 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Only hide specific background elements; ALLOW fileViewer to display */
-  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap { 
+  #centerUI, #npInfoWrap, #npLibraryWrap, #portCoverWrap { 
     display: none !important; 
+  }
+
+  .cf-stage::after {
+    background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 90%, rgba(0,0,0,1) 100%);
   }
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
 
-  /* Display Portrait elements with proper spacing constraints */
   #portView {
     display: flex;
     flex-direction: column;
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 100;
-    /* Accounts for the absolute bottom UI to perfectly center the remaining space */
     padding-bottom: 160px; 
+    pointer-events: none; 
   }
 
+  /* Portrait Top Text: Title (Dynamic), Artist (Static) */
   #portTopText {
     padding-top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
     text-align: center;
     flex: 0 0 auto;
+    padding-left: 20px; padding-right: 20px;
     pointer-events: auto;
-  }
-  
-  /* Portrait Threshold Boundary Constraints */
-  #portTitleWrap {
-    max-width: calc(100vw - 140px); /* Provides sufficient safe space, preventing bleed into the right-aligned button */
-    margin: 0 auto;
-    display: block;
-    white-space: nowrap;
     overflow: hidden;
   }
-
-  #portArtistWrap {
-    display: block;
-    margin: 0 auto;
-    padding: 0 20px;
+  
+  /* Apply mask ONLY to title marquee-wrap in portrait */
+  #portTitleWrap {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
+    overflow: visible; display: flex; align-items: center; justify-content: center;
   }
   
   #portLibraryBtn {
@@ -346,27 +352,7 @@ input {
   /* Dynamic Title */
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
   /* Static Artist */
-  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  #portCoverWrap {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 20px;
-  }
-  
-  .port-canvas-container {
-    width: min(75vw, 340px); 
-    aspect-ratio: 1/1;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
-    border-radius: 4px;
-    background: #1a1a1a;
-  }
-  .port-canvas-container canvas {
-    width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
-  }
+  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
   #bottomUIWrapper {
     position: absolute;
@@ -374,20 +360,19 @@ input {
     padding-bottom: max(env(safe-area-inset-bottom, 20px), 40px);
     z-index: 200;
   }
-  #nowPlayingBar {
-    flex-direction: column-reverse; 
-  }
-  #npBarBottom {
-    justify-content: center;
-    margin-bottom: 25px;
-    padding: 0;
-  }
-  #npControls {
-    position: relative; left: 0; transform: none; gap: 60px;
-  }
+  #nowPlayingBar { flex-direction: column-reverse; }
+  #npBarBottom { justify-content: center; margin-bottom: 25px; padding: 0; }
+  #npControls { position: relative; left: 0; transform: none; gap: 60px; }
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
+
+  #fileViewer {
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
+}
+@media screen and (orientation: landscape) {
+  #portLibraryBtn { display: none !important; }
 }
 
 
@@ -398,40 +383,25 @@ input {
   transform: translateY(100%); transition: transform 0.38s cubic-bezier(.32,.72,0,1);
   border-radius: 12px 12px 0 0; padding-left: max(env(safe-area-inset-left), 12px);
   padding-right: max(env(safe-area-inset-right), 12px);
-  overflow-x: hidden; /* Locks horizontal scroll */
 }
 #fileViewer.open { transform: translateY(0); }
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
 #fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
 
-/* Sleek Header & Segment Controls: Perfect centering logic */
-#fvHeader, #fvDetailHeader { 
-  display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
-}
-#fvDetailHeader { justify-content: space-between; }
-
+/* Sleek Header & Segment Controls */
+#fvHeader { display: flex; align-items: center; padding: 16px 20px 8px; justify-content: center; position: relative; }
 #fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
 .fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
 .fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
 
-/* Glassy Exit Button: perfectly centered vertically and horizontally */
-.glass-close-btn { 
-  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-  width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; border: 1px solid #2a2a2a; z-index: 200;
-}
-
-/* Updated Portrait safe area for file viewer header */
-@media screen and (orientation: portrait) {
-  #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
-  #fvHeader { min-height: 74px; }
-  .glass-close-btn { top: 60%; }
-}
+/* Glassy Exit Button */
+#fvCloseBtn { position: absolute; right: 20px; width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; }
 
 /* Import/New Buttons Bar */
-#fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; }
+#fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; }
 .fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #1c1c1e; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; color: #fff; }
 
-#fvContent { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; }
+#fvContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
@@ -446,115 +416,25 @@ input {
 .fv-item-title { font-size: 16px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; }
 
-/* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
-#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
+/* ===== DETAIL VIEW ===== */
+#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; padding-left: max(env(safe-area-inset-left), 12px); padding-right: max(env(safe-area-inset-right), 12px); }
 #fvDetail.open { transform: translateX(0); }
-
-/* Updated Portrait safe area for detail header and back button position */
-@media screen and (orientation: portrait) {
-  #fvDetail { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
-  #fvDetailHeader { min-height: 74px; }
-  #fvDetailTitleBar { display: none !important;}
-}
-
-/* "Back" button unified with absolute close button height and perfectly centered vertically */
-#fvBackBtn { 
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; min-height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
-  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
-}
-
-#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-#fvDetailContent { 
-  flex: 1; 
-  overflow-y: auto; 
-  overflow-x: hidden; 
-  -webkit-overflow-scrolling: touch; 
-  display: flex; flex-direction: column; align-items: center; 
-  padding: 18px 20px max(80px, env(safe-area-inset-bottom)) 20px;
-}
-
-/* Legacy Detail View for Albums */
-.fv-detail-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-bottom: 24px; max-width: 100%; width: 320px;}
-.fv-detail-cover-wrap { width: 140px; height: 140px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
-.fv-detail-cover-wrap canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
-.fv-detail-info-col { width: 100%; min-width: 0; }
-.fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-bottom: 6px; }
-.fv-detail-artist { font-size: 16px; color: #888; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
-.fv-btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 16px; width: 100%;}
-
-/* SHARED Custom Button Styles for Songs */
-.fv-change-cover-btn, .fv-edit-info-btn { 
-  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; white-space: nowrap; border-radius: 20px; background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; width: auto; max-width: fit-content;
-}
-.fv-edit-info-btn { font-weight: 500; color: #ddd; }
-
-/* SHARED Song Info Styling */
-.fv-song-info-display {
-  display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; border-top: 1px solid #222; padding-top: 16px; margin: 0 auto;
-}
-.fv-info-item { display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: #aaa; }
-.fv-info-label { font-weight: 500; }
-.fv-info-value { color: #fff; font-weight: 400; }
-
-.fv-tracks-list { width: 100%; max-width: 320px;}
+#fvDetailHeader { display: flex; align-items: center; padding: 14px 20px; gap: 8px; border-bottom: 0.5px solid #111; }
+#fvBackBtn { display: flex; align-items: center; gap: 4px; font-size: 15px; color: #fff; font-weight: 600; }
+#fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-align: center; padding-right: 70px; }
+#fvDetailContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 20px; }
+.fv-detail-hero { display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start; }
+.fv-detail-cover-wrap { width: 120px; height: 120px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+.fv-detail-cover-wrap canvas { width: 120px; height: 120px; display: block; object-fit: cover; }
+.fv-detail-info-col { flex: 1; min-width: 0; }
+.fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.fv-detail-artist { font-size: 16px; color: #888; }
+.fv-btn-group { display: flex; gap: 10px; margin-top: 16px; }
+.fv-change-cover-btn { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; }
 .fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
-.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;}
+.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ===== PORTRAIT SPECIFIC DETAIL VIEW OVERRIDES ===== */
-@media screen and (orientation: portrait) {
-    /* Modify Album view safely */
-    .fv-detail-hero { flex-direction: row; align-items: center; text-align: left; max-width: none; width: 100%;}
-    .fv-detail-cover-wrap { width: 120px; height: 120px; flex-shrink: 0;}
-    .fv-detail-info-col { text-align: left; }
-    .fv-btn-group { justify-content: flex-start; }
-    .fv-change-cover-btn { max-width: none;}
-    .fv-tracks-list { max-width: none;}
-
-    /* New unified Portrait Song Layout */
-    .fv-song-layout {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        padding-top: max(20px, 30px); /* Pushes content down on portrait */
-    }
-    .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; margin-bottom: 24px; margin-left: auto; margin-right: auto;}
-    .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
-    .fv-song-layout .fv-detail-name { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; text-align: center; }
-    .fv-song-layout .fv-detail-artist { font-size: 16px; color: #888; margin-bottom: 20px; text-align: center; }
-    .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: center; gap: 12px; width: 100%; margin-bottom: 24px; }
-}
-
-/* ===== LANDSCAPE SPECIFIC DETAIL VIEW OVERRIDES ===== */
-@media screen and (orientation: landscape) {
-  /* Restore Album view safely */
-  #fvDetailContent {
-    flex-direction: row; align-items: center; justify-content: center; gap: 40px;
-    padding-left: max(env(safe-area-inset-left), 20px); padding-right: max(env(safe-area-inset-right), 20px);
-    padding-top: 10px; padding-bottom: 10px; /* Restores vertical position */
-    height: 100%;
-  }
-  .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
-  .fv-detail-info-col { text-align: center;}
-  .fv-btn-group { justify-content: center; flex-direction: row; }
-
-  #fvBackBtn { font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 20px; }
-  .glass-close-btn { width: 44px; height: 44px; }
-
-  /* Restore and Fix Landscape Song Layout */
-  .fv-song-layout {
-      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 40px; width: 100%; height: 100%;
-      padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px);
-  }
-  .fv-song-layout .fv-detail-cover-wrap { width: 240px; height: 240px; flex-shrink: 0; }
-  .fv-song-layout .fv-detail-info-col { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
-  .fv-song-layout .fv-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
-  .fv-song-layout .fv-detail-artist { font-size: 18px; color: #888; margin-bottom: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: left; }
-  .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; margin-bottom: 24px; }
-}
-
-/* Modal styling is maintained, just re-ensuring Pitch Black aesthetic */
+/* ===== MODALS ===== */
 .fv-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .fv-modal.open { opacity: 1; pointer-events: auto; }
 .fv-modal-box { background: #000000; border-radius: 24px; padding: 24px; width: 280px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
@@ -660,9 +540,7 @@ input {
           <button class="fv-seg" data-tab="songs">Songs</button>
           <button class="fv-seg" data-tab="albums">Albums</button>
         </div>
-        <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
-        </button>
+        <button id="fvCloseBtn" aria-label="Close">✕</button>
       </div>
       <div id="fvImportBar">
         <button class="fv-import-btn" id="importSongBtn">Import Song</button>
@@ -673,14 +551,10 @@ input {
         <div class="fv-tab" id="tabSongs"></div>
         <div class="fv-tab" id="tabAlbums"></div>
       </div>
-      
       <div id="fvDetail">
         <div id="fvDetailHeader">
           <button id="fvBackBtn">Library</button>
           <div id="fvDetailTitleBar"></div>
-          <button id="fvDetailCloseBtn" class="glass-close-btn" aria-label="Close">
-             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
-          </button>
         </div>
         <div id="fvDetailContent"></div>
       </div>
@@ -904,6 +778,10 @@ async function buildCoverFlow() {
     rc.className = 'cf-reflect-canvas';
     ref.appendChild(rc);
     
+    const fade = document.createElement('div'); 
+    fade.className = 'cf-reflect-fade'; 
+    ref.appendChild(fade);
+    
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
     
@@ -964,6 +842,9 @@ function layoutCoverFlow() {
   
   titleEl.textContent = item.title || (item._empty ? '—' : item.title); 
   artistEl.textContent = item.artist || (item._empty ? 'Import music to begin' : '');
+  
+  // Center Marquee evaluation
+  setTimeout(evaluateMarqueeCenter, 50);
 }
 
 function setCurrent(i) { 
@@ -1150,7 +1031,6 @@ if(document.getElementById('portLibraryBtn')) {
 }
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
-document.getElementById('fvDetailCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 
 document.querySelectorAll('.fv-seg').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1213,55 +1093,21 @@ async function renderTab(id, items) {
   }
 }
 
-// Utility to format dates/bytes
-const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm = 1; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; };
-const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
-
 async function renderDetailView() {
   const i = currentItemForDetail; 
   if (!i) return; 
-  
-  const c = document.getElementById('fvDetailContent'); 
-  c.innerHTML = '';
-  
-  if (i.type === 'song') {
-    const hero = document.createElement('div'); 
-    hero.className = 'fv-song-layout'; 
-    hero.innerHTML = `
-      <div class="fv-detail-cover-wrap"></div>
-      <div class="fv-detail-info-col">
-        <div class="fv-detail-name">${i.title}</div>
-        <div class="fv-detail-artist">${i.artist}</div>
-        <div class="fv-btn-group">
-          <button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="position:relative;top:-1px;"><path d="M8 0a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5a6.5 6.5 0 1 1 6.5-6.5 6.5 6.5 0 0 1-6.5 6.5zM8 3a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm-.75-3.75v1.5h1.5v-1.5h-1.5z" fill="#fff"/></svg>
-            Change Cover
-          </button>
-          <button class="fv-edit-info-btn" onclick="openEditModal()">Edit Info</button>
-        </div>
-        <div class="fv-song-info-display">
-          <div class="fv-info-item"><span class="fv-info-label">Size</span><span class="fv-info-value">${i.size ? formatBytes(i.size) : '—'}</span></div>
-          <div class="fv-info-item"><span class="fv-info-label">Date Added</span><span class="fv-info-value">${i.uploadDate ? formatDate(i.uploadDate) : '—'}</span></div>
-          <div class="fv-info-item"><span class="fv-info-label">Date Modified</span><span class="fv-info-value">${i.modifiedDate ? formatDate(i.modifiedDate) : formatDate(i.uploadDate)}</span></div>
-        </div>
-      </div>`;
-    // Cover is drawn at full resolution, CSS handles scaling down to prevent greyness
-    hero.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 340)); 
-    c.appendChild(hero);
-  } else {
-    // Legacy view protected for Albums
-    document.getElementById('fvDetailTitleBar').textContent = i.title; 
-    
-    const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
-    h.innerHTML = `<div class="fv-detail-cover-wrap"></div><div class="fv-detail-info-col"><div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div><div class="fv-btn-group"><button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">Change Cover</button><button class="fv-change-cover-btn" onclick="openEditModal()">Edit Info</button></div></div>`;
-    h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 140)); c.appendChild(h);
-    
-    const tl = document.createElement('div'); tl.className = 'fv-tracks-list';
+  document.getElementById('fvDetailTitleBar').textContent = i.title; 
+  const c = document.getElementById('fvDetailContent'); c.innerHTML = '';
+  const h = document.createElement('div'); h.className = 'fv-detail-hero'; 
+  h.innerHTML = `<div class="fv-detail-cover-wrap"></div><div class="fv-detail-info-col"><div class="fv-detail-name">${i.title}</div><div class="fv-detail-artist">${i.artist}</div><div class="fv-btn-group"><button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">Change Cover</button><button class="fv-change-cover-btn" onclick="openEditModal()">Edit Info</button></div></div>`;
+  h.querySelector('.fv-detail-cover-wrap').appendChild(await getCoverCanvas(i, 120)); c.appendChild(h);
+  if (i.type === 'album') { 
     i.tracks.forEach(t => { 
-      const tr = document.createElement('div'); tr.className = 'fv-track-item'; tr.innerHTML = `<div class="fv-track-name">${t.title}</div>`; tr.onclick = () => playTrack(t.audioId, t.title, i); tl.appendChild(tr); 
+      const tr = document.createElement('div'); tr.className = 'fv-track-item'; tr.innerHTML = `<div class="fv-track-name">${t.title}</div>`; tr.onclick = () => playTrack(t.audioId, t.title, i); c.appendChild(tr); 
     }); 
-    const ad = document.createElement('button'); ad.className = 'fv-change-cover-btn'; ad.style.marginTop = '10px'; ad.style.width = '100%'; ad.style.maxWidth = 'none'; ad.textContent = '+ Add Track'; ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); }; tl.appendChild(ad); 
-    c.appendChild(tl);
+    const ad = document.createElement('button'); ad.className = 'fv-change-cover-btn'; ad.style.marginTop = '10px'; ad.textContent = '+ Add Track'; ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); }; c.appendChild(ad); 
+  } else if (i.audioId) { 
+    const tr = document.createElement('div'); tr.className = 'fv-track-item'; tr.innerHTML = `<div class="fv-track-name">Play Song</div>`; tr.onclick = () => playTrack(i.audioId, i.title, i); c.appendChild(tr); 
   }
 }
 
@@ -1269,21 +1115,13 @@ async function renderDetailView() {
    DATA EDITING & IMPORTING
 ================================================================ */
 function openEditModal() { editTargetItem = currentItemForDetail; document.getElementById('editTitleInput').value = editTargetItem.title; document.getElementById('editArtistInput').value = editTargetItem.artist; document.getElementById('editModal').classList.add('open'); }
-
-document.getElementById('editConfirm').onclick = async () => { 
-  editTargetItem.title = document.getElementById('editTitleInput').value; editTargetItem.artist = document.getElementById('editArtistInput').value; 
-  editTargetItem.modifiedDate = Date.now(); // Update date modified
-  await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); 
-  document.getElementById('editModal').classList.remove('open'); renderAllTabs(); renderDetailView(); buildCoverFlow(); 
-};
-
+document.getElementById('editConfirm').onclick = async () => { editTargetItem.title = document.getElementById('editTitleInput').value; editTargetItem.artist = document.getElementById('editArtistInput').value; await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); document.getElementById('editModal').classList.remove('open'); renderAllTabs(); renderDetailView(); buildCoverFlow(); };
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
 document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
-
 document.getElementById('audioInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f) return; showToast('Importing...'); 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
-  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: library.length, size: f.size }; 
+  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), _slot: library.length }; 
   library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); showToast('Done ✓'); e.target.value = '';
 };
 document.getElementById('newAlbumBtn2').onclick = () => { document.getElementById('newAlbumModal').classList.add('open'); };
@@ -1295,101 +1133,100 @@ document.getElementById('albumModalCreate').onclick = async () => {
 document.getElementById('albumModalCancel').onclick = () => document.getElementById('newAlbumModal').classList.remove('open');
 document.getElementById('pickAudioRow').onclick = () => document.getElementById('trackAudioInput').click();
 document.getElementById('trackAudioInput').onchange = e => { const f = e.target.files[0]; if (f) document.getElementById('pickAudioLabel').textContent = f.name; };
-
 document.getElementById('addTrackConfirm').onclick = async () => { 
   const t = document.getElementById('trackTitleInput').value; const f = document.getElementById('trackAudioInput').files[0]; if (!t || !f) return; 
-  const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); 
-  alb.tracks.push({id: genId(), title: t, audioId: bId}); 
-  alb.modifiedDate = Date.now(); // Update parent album date modified
+  const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); alb.tracks.push({id: genId(), title: t, audioId: bId}); 
   await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); document.getElementById('addTrackModal').classList.remove('open'); renderDetailView(); document.getElementById('trackAudioInput').value = '';
 };
-
 document.getElementById('addTrackCancel').onclick = () => document.getElementById('addTrackModal').classList.remove('open');
-
 document.getElementById('coverInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f || !coverChangeTargetId) return; 
   const bId = genId(); await dbPut('blobs', bId, f); const i = library.find(x => x.id === coverChangeTargetId); i.coverId = bId; 
-  i.modifiedDate = Date.now(); // Update date modified
   await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(); e.target.value = '';
 };
-
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS
+   INITIALIZATION & TOUCH EVENTS (REWRITTEN VELOCITY PHYSICS)
 ================================================================ */
+let swipeStartX = 0, lastSwipeX = 0, lastSwipeTime = 0, swipeVelocity = 0, isSwipingStage = false;
 
-// Original short-swipe CoverFlow Logic (Landscape)
-let touchStartX = 0;
-cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
-cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
+function handleSwipeStart(x) {
+  swipeStartX = x; lastSwipeX = x; lastSwipeTime = Date.now(); isSwipingStage = true;
+}
 
-let mouseX = 0, dragging = false;
-cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
-window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
+function handleSwipeMove(x) {
+  if (!isSwipingStage) return;
+  const now = Date.now(); const dt = now - lastSwipeTime;
+  if (dt > 0) { swipeVelocity = (x - lastSwipeX) / dt; }
+  lastSwipeX = x; lastSwipeTime = now;
+}
 
-// Original Vertical Art Swipe (Portrait)
-const portCoverWrap = document.getElementById('portCoverWrap');
-let portSwipeStartX = 0;
-portCoverWrap.addEventListener('touchstart', e => { portSwipeStartX = e.touches[0].clientX; }, {passive: true});
-portCoverWrap.addEventListener('touchend', e => { 
-  const dx = e.changedTouches[0].clientX - portSwipeStartX; 
-  if (dx > 40) playPrevTrack(); 
-  else if (dx < -40) playNextTrack(); 
-});
+function handleSwipeEnd(x) {
+  if (!isSwipingStage) return;
+  isSwipingStage = false;
+  const dx = x - swipeStartX; const absDx = Math.abs(dx); const absVel = Math.abs(swipeVelocity);
 
+  // Precision check: if movement is small, or velocity is low, always do a 1-skip
+  if (absDx > 20) {
+    let skip = 1;
+    
+    // Smooth gliding logic (velocity based)
+    if (absVel > 0.35) { 
+      // Increased glide divisor, reduced overall speed effect
+      skip = Math.max(1, Math.round(absVel * 3.8)); 
+    } 
+    // Fallback based on raw distance
+    else if (absDx > 150) { 
+      // Lower distance divisor for fallbacks
+      skip = Math.max(1, Math.round(absDx / 70)); 
+    } 
+
+    const dir = dx < 0 ? 1 : -1;
+    // Gliding transition speed in CSS above (.38s cubic-bezier(.1,.6,.3,1.0))
+    setCurrent(current + (dir * skip));
+  }
+  swipeVelocity = 0;
+}
+
+cfStage.addEventListener('touchstart', e => handleSwipeStart(e.touches[0].clientX), {passive: true});
+cfStage.addEventListener('touchmove', e => handleSwipeMove(e.touches[0].clientX), {passive: true});
+cfStage.addEventListener('touchend', e => handleSwipeEnd(e.changedTouches[0].clientX));
+cfStage.addEventListener('mousedown', e => { handleSwipeStart(e.clientX); });
+window.addEventListener('mousemove', e => { if (isSwipingStage) handleSwipeMove(e.clientX); });
+window.addEventListener('mouseup', e => { if (isSwipingStage) handleSwipeEnd(e.clientX); });
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
-  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(); }, 100); 
+  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); }, 100); 
 });
 
-
-// Initialization logic
 async function init() { 
-  // Standard initialization logic.
-  setTimeout(() => {
-    const fadeScreen = document.getElementById('startupFade');
-    if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
-  }, 100);
-
-  try {
-    await openDB(); 
-    const saved = await dbGetAll('albums'); 
-    if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
-  } catch (e) {
-    library = [];
-  }
-
+  await openDB(); 
+  const saved = await dbGetAll('albums'); 
+  if (saved) { library = saved.sort((a, b) => a._slot - b._slot); }
   const allTracks = [];
   library.forEach(item => {
     if (item.type === 'song' && item.audioId) { allTracks.push({ trackId: item.audioId, trackTitle: item.title, albumItem: item }); } 
     else if (item.type === 'album' && item.tracks) { item.tracks.forEach(t => { if (t.audioId) allTracks.push({ trackId: t.audioId, trackTitle: t.title, albumItem: item }); }); }
   });
-
   if (allTracks.length > 0) {
     const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
     current = Math.max(0, library.findIndex(x => x.id === randomTrack.albumItem.id));
+    // Load track quietly, evaluate marquee logic
     await playTrack(randomTrack.trackId, randomTrack.trackTitle, randomTrack.albumItem, false);
   } else {
     current = 0;
     document.getElementById('portCanvasContainer').appendChild(drawPlaceholderCover(340, 0));
   }
-
   setTimeout(buildCoverFlow, 150);
+  setTimeout(() => {
+    const fadeScreen = document.getElementById('startupFade');
+    if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
+  }, 100);
 }
-
-// iOS PWA state check for onload event.
-if (document.readyState !== 'loading') {
-  init();
-} else {
-  document.addEventListener('DOMContentLoaded', init);
-}
-
-// Service Worker register.
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); 
-}
+window.onload = init;
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline setup failed: ', err)); }); }
 </script>
 </body>
 </html>
