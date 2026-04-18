@@ -179,7 +179,7 @@ input {
   gap: 10px; 
 }
 
-/* Text containers are now static in Landscape Center */
+/* Text containers are static in Landscape Center */
 #cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 #cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -264,7 +264,6 @@ input {
 }
 
 /* Left: Track Info Thumbnail (LANDSCAPE) */
-/* Implemented max-width and padding constraint for Landscape thresholds */
 #npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; max-width: 200px; padding-right: 20px;}
 #npThumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: #1a1a1a; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
@@ -304,8 +303,8 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Hide Landscape elements AND the file viewer entirely */
-  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap, #fileViewer { 
+  /* Only hide specific background elements; ALLOW fileViewer to display */
+  #cfStage, #centerUI, #npInfoWrap, #npLibraryWrap { 
     display: none !important; 
   }
 
@@ -370,7 +369,6 @@ input {
     padding: 0 20px;
   }
   
-  /* Generates the sleek glass reflection underneath the cover art */
   .port-canvas-container {
     width: min(75vw, 340px); 
     aspect-ratio: 1/1;
@@ -383,7 +381,6 @@ input {
     width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
   }
 
-  /* Reorganize shared controls to match target UI */
   #bottomUIWrapper {
     position: absolute;
     bottom: 0; left: 0; width: 100%;
@@ -391,7 +388,7 @@ input {
     z-index: 200;
   }
   #nowPlayingBar {
-    flex-direction: column-reverse; /* Flips scrubber to bottom, controls to top */
+    flex-direction: column-reverse; 
   }
   #npBarBottom {
     justify-content: center;
@@ -404,13 +401,17 @@ input {
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   #npScrubberContainer { width: 85%; margin: 0 auto; }
+
+  #fileViewer {
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
 }
 
 
-/* ===== FILE VIEWER (With Safe Area padding) ===== */
+/* ===== FILE VIEWER & UI STYLING UPDATE (PITCH BLACK + GLASS) ===== */
 #fileViewer {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 300;
-  display: flex; flex-direction: column; background: #0d0d0d;
+  display: flex; flex-direction: column; background: #000000;
   transform: translateY(100%); transition: transform 0.38s cubic-bezier(.32,.72,0,1);
   border-radius: 12px 12px 0 0; padding-left: max(env(safe-area-inset-left), 12px);
   padding-right: max(env(safe-area-inset-right), 12px);
@@ -418,62 +419,67 @@ input {
 #fileViewer.open { transform: translateY(0); }
 #fvHandle { flex-shrink: 0; padding: 8px 0 0; display: flex; justify-content: center; }
 #fvHandle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: #2a2a2a; }
-#fvHeader { display: flex; align-items: center; padding: 12px 14px; gap: 8px; border-bottom: 0.5px solid #1c1c1c; }
-#fvSegments { flex: 1; display: flex; background: #1a1a1a; border-radius: 9px; padding: 3px; gap: 2px; }
-.fv-seg { flex: 1; padding: 8px 2px; font-size: 13px; font-weight: 600; color: #555; border-radius: 7px; text-align: center; }
-.fv-seg.active { background: #2c2c2e; color: #fff; }
-#fvCloseBtn { width: 32px; height: 32px; border-radius: 50%; background: #2a2a2a; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 16px; }
-#fvImportBar { display: flex; align-items: center; padding: 12px 14px; gap: 12px; border-bottom: 0.5px solid #1a1a1a; }
-.fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; background: #1c1c1e; font-size: 13px; font-weight: 600; border: 0.5px solid #2a2a2a; }
-.fv-import-btn { color: #bbb; }
-#newAlbumBtn2 { color: #4a9eff; }
+
+/* Sleek Header & Segment Controls */
+#fvHeader { display: flex; align-items: center; padding: 16px 20px 8px; justify-content: center; position: relative; border-bottom: none; }
+#fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
+.fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
+.fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
+
+/* Glassy Exit Button */
+#fvCloseBtn { position: absolute; right: 20px; width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; }
+
+/* Import/New Buttons Bar */
+#fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; }
+.fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #1c1c1e; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; color: #fff; }
+
 #fvContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
-/* SWIPE TO DELETE LOGIC */
-.fv-list-item-wrap { position: relative; overflow: hidden; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+/* SWIPE TO DELETE LOGIC & LIBRARY ITEMS */
+.fv-list-item-wrap { position: relative; overflow: hidden; border-bottom: none; }
 .fv-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
-.fv-list-item { display: flex; align-items: center; padding: 14px 16px; gap: 16px; cursor: pointer; background: #0d0d0d; position: relative; z-index: 2; transition: transform 0.2s ease-out; }
+.fv-list-item { display: flex; align-items: center; padding: 14px 20px; gap: 16px; cursor: pointer; background: #000000; position: relative; z-index: 2; transition: transform 0.2s ease-out; }
 .fv-list-item.swiped { transform: translateX(-80px); }
-.fv-item-art { width: 54px; height: 54px; border-radius: 6px; overflow: hidden; background: #1a1a1a; }
+.fv-item-art { width: 54px; height: 54px; border-radius: 8px; overflow: hidden; background: #1a1a1a; }
 .fv-item-art canvas { width: 54px; height: 54px; display: block; object-fit: cover; }
 .fv-item-info { flex: 1; min-width: 0; }
 .fv-item-title { font-size: 16px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fv-item-sub { font-size: 14px; color: #777; margin-top: 4px; }
+.fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; }
 
 /* ===== DETAIL VIEW ===== */
-#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #0d0d0d; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; padding-left: max(env(safe-area-inset-left), 12px); padding-right: max(env(safe-area-inset-right), 12px); }
+#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; padding-left: max(env(safe-area-inset-left), 12px); padding-right: max(env(safe-area-inset-right), 12px); }
 #fvDetail.open { transform: translateX(0); }
-#fvDetailHeader { display: flex; align-items: center; padding: 14px 16px; gap: 8px; border-bottom: 0.5px solid #1c1c1c; }
-#fvBackBtn { display: flex; align-items: center; gap: 4px; font-size: 15px; color: #4a9eff; font-weight: 500; }
+#fvDetailHeader { display: flex; align-items: center; padding: 14px 20px; gap: 8px; border-bottom: 0.5px solid #111; }
+#fvBackBtn { display: flex; align-items: center; gap: 4px; font-size: 15px; color: #fff; font-weight: 600; }
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-align: center; padding-right: 70px; }
-#fvDetailContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 16px; }
+#fvDetailContent { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 20px; }
 .fv-detail-hero { display: flex; gap: 20px; margin-bottom: 24px; align-items: flex-start; }
-.fv-detail-cover-wrap { width: 120px; height: 120px; border-radius: 10px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+.fv-detail-cover-wrap { width: 120px; height: 120px; border-radius: 12px; overflow: hidden; background: #1a1a1a; position: relative; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
 .fv-detail-cover-wrap canvas { width: 120px; height: 120px; display: block; object-fit: cover; }
 .fv-detail-info-col { flex: 1; min-width: 0; }
 .fv-detail-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
 .fv-detail-artist { font-size: 16px; color: #888; }
 .fv-btn-group { display: flex; gap: 10px; margin-top: 16px; }
-.fv-change-cover-btn { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; background: #1c1c1e; font-size: 13px; color: #4a9eff; border: 0.5px solid #2a2a2a; font-weight: 600; }
-.fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+.fv-change-cover-btn { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; }
+.fv-track-item { display: flex; align-items: center; padding: 14px 8px; gap: 12px; border-radius: 8px; border-bottom: 0.5px solid #111; }
 .fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== MODALS ===== */
 .fv-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .fv-modal.open { opacity: 1; pointer-events: auto; }
-.fv-modal-box { background: #1c1c1e; border-radius: 18px; padding: 24px; width: 280px; border: 0.5px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+.fv-modal-box { background: #000000; border-radius: 24px; padding: 24px; width: 280px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
 .fv-modal-box h3 { color: #fff; text-align: center; margin-bottom: 16px; font-size: 17px; }
-.fv-input { width: 100%; background: #111; border: 0.5px solid #2a2a2a; border-radius: 10px; padding: 12px 14px; font-size: 15px; color: #fff; margin-bottom: 12px; -webkit-appearance: none; }
+.fv-input { width: 100%; background: #111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 12px 14px; font-size: 15px; color: #fff; margin-bottom: 12px; -webkit-appearance: none; }
 .fv-modal-btns { display: flex; gap: 12px; margin-top: 8px; }
-.fv-modal-btns button { flex: 1; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700; }
-.fv-modal-cancel { background: #2a2a2a; color: #aaa; }
-.fv-modal-create { background: #2a5cff; color: #fff; }
+.fv-modal-btns button { flex: 1; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 700; border: 1px solid #2a2a2a; }
+.fv-modal-cancel { background: #1c1c1e; color: #fff; }
+.fv-modal-create { background: #fff; color: #000; border-color: #fff; }
 
-.fv-pick-file-row { display: flex; align-items: center; justify-content: space-between; background: #111; border: 0.5px solid #2a2a2a; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.fv-pick-file-row { display: flex; align-items: center; justify-content: space-between; background: #111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
 .fv-pick-file-row span:first-child { font-size: 14px; color: #888; }
-.fv-pick-file-row span:last-child { font-size: 13px; color: #4a9eff; }
+.fv-pick-file-row span:last-child { font-size: 13px; color: #fff; font-weight: 600; }
 
 #toast {
   position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(40,40,40,0.96); border-radius: 20px; padding: 10px 20px; font-size: 14px; color: #ddd; white-space: nowrap; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s; border: 0.5px solid rgba(255,255,255,0.1);
@@ -885,7 +891,6 @@ const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
 
-// Dynamically checks thresholds and ONLY applies masks/animations when exceeded
 function evaluateMarqueeNP() {
   ['npTitle', 'npArtist', 'portTitle'].forEach(id => {
     const el = document.getElementById(id);
@@ -896,10 +901,8 @@ function evaluateMarqueeNP() {
     const parent = el.parentElement; 
     parent.classList.remove('masked-overflow');
 
-    // Force reflow for accurate measurements
     void el.offsetWidth;
 
-    // The threshold is managed by the CSS constraints (e.g. max-width on parent containers).
     if (el.scrollWidth > parent.clientWidth) {
       el.style.setProperty('--mw', parent.clientWidth + 'px');
       el.classList.add('scroll');
@@ -924,7 +927,6 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('portTitle').textContent = trackTitle || 'Unknown Track';
   document.getElementById('portArtist').textContent = albumItem?.artist || '';
   
-  // Calculate text bleed / marquee bounds
   setTimeout(evaluateMarqueeNP, 50);
 
   document.getElementById('portCanvasContainer').innerHTML = '';
@@ -1160,47 +1162,28 @@ document.getElementById('coverInput').onchange = async e => {
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
 /* ================================================================
-   INITIALIZATION & TOUCH EVENTS (REWRITTEN VELOCITY PHYSICS)
+   INITIALIZATION & TOUCH EVENTS (ORIGINAL SHORT SWIPE RESTORED)
 ================================================================ */
-let swipeStartX = 0, lastSwipeX = 0, lastSwipeTime = 0, swipeVelocity = 0, isSwipingStage = false;
 
-function handleSwipeStart(x) {
-  swipeStartX = x; lastSwipeX = x; lastSwipeTime = Date.now(); isSwipingStage = true;
-}
+// Original short-swipe CoverFlow Logic (Landscape)
+let touchStartX = 0;
+cfStage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive: true});
+cfStage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); });
 
-function handleSwipeMove(x) {
-  if (!isSwipingStage) return;
-  const now = Date.now(); const dt = now - lastSwipeTime;
-  if (dt > 0) { swipeVelocity = (x - lastSwipeX) / dt; }
-  lastSwipeX = x; lastSwipeTime = now;
-}
+let mouseX = 0, dragging = false;
+cfStage.addEventListener('mousedown', e => { dragging = true; mouseX = e.clientX; });
+window.addEventListener('mouseup', e => { if (!dragging) return; dragging = false; const dx = e.clientX - mouseX; if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); });
 
-function handleSwipeEnd(x) {
-  if (!isSwipingStage) return;
-  isSwipingStage = false;
-  const dx = x - swipeStartX; const absDx = Math.abs(dx); const absVel = Math.abs(swipeVelocity);
+// Original Vertical Art Swipe (Portrait)
+const portCoverWrap = document.getElementById('portCoverWrap');
+let portSwipeStartX = 0;
+portCoverWrap.addEventListener('touchstart', e => { portSwipeStartX = e.touches[0].clientX; }, {passive: true});
+portCoverWrap.addEventListener('touchend', e => { 
+  const dx = e.changedTouches[0].clientX - portSwipeStartX; 
+  if (dx > 40) playPrevTrack(); 
+  else if (dx < -40) playNextTrack(); 
+});
 
-  if (absDx > 20) {
-    let skip = 1;
-    if (absVel > 0.35) { 
-      skip = Math.max(1, Math.round(absVel * 3.8)); 
-    } 
-    else if (absDx > 150) { 
-      skip = Math.max(1, Math.round(absDx / 70)); 
-    } 
-
-    const dir = dx < 0 ? 1 : -1;
-    setCurrent(current + (dir * skip));
-  }
-  swipeVelocity = 0;
-}
-
-cfStage.addEventListener('touchstart', e => handleSwipeStart(e.touches[0].clientX), {passive: true});
-cfStage.addEventListener('touchmove', e => handleSwipeMove(e.touches[0].clientX), {passive: true});
-cfStage.addEventListener('touchend', e => handleSwipeEnd(e.changedTouches[0].clientX));
-cfStage.addEventListener('mousedown', e => { handleSwipeStart(e.clientX); });
-window.addEventListener('mousemove', e => { if (isSwipingStage) handleSwipeMove(e.clientX); });
-window.addEventListener('mouseup', e => { if (isSwipingStage) handleSwipeEnd(e.clientX); });
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
