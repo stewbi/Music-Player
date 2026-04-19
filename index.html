@@ -268,7 +268,7 @@ input {
 }
 
 /* Left: Track Info Thumbnail (LANDSCAPE) */
-#npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; max-width: 200px; padding-right: 20px;}
+#npInfoWrap { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; max-width: 200px; padding-right: 20px; cursor: pointer;}
 #npThumb { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: #1a1a1a; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 #npThumb canvas { width: 48px; height: 48px; display: block; object-fit: cover; }
 #npInfo { 
@@ -337,7 +337,7 @@ input {
   
   /* Portrait Threshold Boundary Constraints */
   #portTitleWrap, #portArtistWrap {
-    max-width: calc(100vw - 120px);
+    max-width: calc(100vw - 180px);
     margin: 0 auto;
   }
   #portTitleWrap {
@@ -432,9 +432,9 @@ input {
   display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
 }
 
-#fvSegments { display: flex; background: transparent; padding: 0; gap: 8px; justify-content: center; }
-.fv-seg { padding: 8px 18px; font-size: 14px; font-weight: 600; color: #888; border-radius: 20px; text-align: center; background: transparent; transition: all 0.2s ease; border: 1px solid transparent; }
-.fv-seg.active { background: #1c1c1e; color: #fff; border: 1px solid #2a2a2a; }
+#fvSegments { display: flex; background: transparent; padding: 0; gap: 4px; justify-content: center; }
+.fv-seg { padding: 8px 12px; font-size: 14px; font-weight: 400; color: #888; border-radius: 0; text-align: center; background: transparent; transition: all 0.2s ease; border: none; }
+.fv-seg.active { font-weight: 700; background: transparent; color: #fff; border: none; }
 
 /* Glassy Exit Button: perfectly centered vertically and horizontally */
 .glass-close-btn { 
@@ -493,8 +493,8 @@ input {
 
 /* "Back" button unified with absolute close button height and perfectly centered vertically */
 #fvBackBtn { 
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; min-height: 32px; border-radius: 20px; background: #1c1c1e; font-size: 13px; color: #fff; border: 1px solid #2a2a2a; font-weight: 600; cursor: pointer;
-  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; background: transparent; font-size: 14px; color: #fff; border: none; font-weight: 400; cursor: pointer; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
 }
 
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -571,7 +571,7 @@ input {
   .fv-detail-info-col { text-align: center;}
   .fv-btn-group { justify-content: center; flex-direction: row; }
 
-  #fvBackBtn { font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 20px; }
+  #fvBackBtn { font-size: 14px; font-weight: 400; min-height: 44px; padding: 0 20px; }
 
   /* Restore and Fix Landscape Song Layout */
   .fv-song-layout {
@@ -909,7 +909,7 @@ async function getCoverCanvas(item, size) {
 
           res(finalCanvas);
         };
-        img.onerror = () => res(drawPlaceholderCover(size, item._slot || 0));
+        img.onerror = () => res(drawPlaceholderCover(size, item ? item._slot || 0 : 0));
         img.src = url;
       });
     }
@@ -1237,6 +1237,18 @@ async function playPrevTrack() {
 document.getElementById('npPrevBtn').addEventListener('click', playPrevTrack);
 document.getElementById('npNextBtn').addEventListener('click', playNextTrack);
 
+// Clickable Now Playing area to open detail view
+document.getElementById('npInfoWrap').onclick = () => {
+  if (!currentlyPlayingId) return;
+  const { item } = findTrackInLibrary(currentlyPlayingId);
+  if (item) {
+    currentItemForDetail = item;
+    renderDetailView();
+    document.getElementById('fileViewer').classList.add('open');
+    document.getElementById('fvDetail').classList.add('open');
+  }
+};
+
 async function togglePlayCurrentItem() { 
   const item = library[current]; 
   if (!item || item._empty) return; 
@@ -1254,7 +1266,7 @@ async function togglePlayCurrentItem() {
 }
 
 /* ================================================================
-   FILE VIEWER MENU & SWIPE TO DELETE
+   FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
 document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); renderAllTabs(); };
 if(document.getElementById('portLibraryBtn')) {
@@ -1289,12 +1301,82 @@ async function renderAllTabs() {
   await renderTab('tabAlbums', library.filter(i => i.type === 'album')); 
 }
 
+// Drag and Drop Helper Function
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.fv-list-item-wrap:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
 async function renderTab(id, items) {
   const tab = document.getElementById(id); 
   tab.innerHTML = ''; 
+
+  // Initialize dropzone for drag-and-drop if not already done
+  if (!tab.dataset.dndInit) {
+    tab.dataset.dndInit = "true";
+    tab.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const afterElement = getDragAfterElement(tab, e.clientY);
+      const draggable = tab.querySelector('.dragging');
+      if (draggable) {
+        if (afterElement == null) {
+          tab.appendChild(draggable);
+        } else {
+          tab.insertBefore(draggable, afterElement);
+        }
+      }
+    });
+    tab.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const newOrderIds = Array.from(tab.querySelectorAll('.fv-list-item-wrap')).map(el => el.dataset.id);
+      
+      // Update the main library sorting based on dragged position
+      library.sort((a, b) => {
+          let idxA = newOrderIds.indexOf(a.id);
+          let idxB = newOrderIds.indexOf(b.id);
+          if (idxA === -1) idxA = 9999;
+          if (idxB === -1) idxB = 9999;
+          return idxA - idxB;
+      });
+      
+      // Save new slots to DB
+      for (let i = 0; i < library.length; i++) {
+          library[i]._slot = i;
+          await dbPut('albums', library[i].id, JSON.parse(JSON.stringify(library[i])));
+      }
+      await buildCoverFlow();
+    });
+  }
+
   if (!items.length) { return; }
   for (const i of items) {
     const wrap = document.createElement('div'); wrap.className = 'fv-list-item-wrap';
+    
+    // Setup Native Drag and Drop
+    wrap.draggable = true;
+    wrap.dataset.id = i.id;
+    wrap.addEventListener('dragstart', (e) => {
+        // Haptic Feedback Trigger for Drag Start
+        if (navigator.vibrate) navigator.vibrate(50); 
+        
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', i.id);
+        wrap.classList.add('dragging');
+        wrap.style.opacity = '0.5';
+    });
+    wrap.addEventListener('dragend', () => {
+        wrap.classList.remove('dragging');
+        wrap.style.opacity = '1';
+    });
+
     const delBtn = document.createElement('div'); delBtn.className = 'fv-delete-btn'; delBtn.textContent = 'Delete';
     delBtn.onclick = async (e) => { e.stopPropagation(); await deleteLibraryItem(i.id); }; wrap.appendChild(delBtn);
     const r = document.createElement('div'); r.className = 'fv-list-item'; 
