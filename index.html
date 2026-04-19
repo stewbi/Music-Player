@@ -401,13 +401,7 @@ input {
   
   /* FIXED FADE OVERLAY - iPhone 17 Pro Fix */
   #fileViewer::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: max(120px, env(safe-area-inset-bottom) + 80px);
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 90%);
-    pointer-events: none;
-    z-index: 500;
+    display: none;
   }
 }
 
@@ -433,7 +427,7 @@ input {
 }
 
 #fvSegments { display: flex; background: transparent; padding: 0; gap: 4px; justify-content: center; }
-.fv-seg { padding: 8px 12px; font-size: 14px; font-weight: 400; color: #888; border-radius: 0; text-align: center; background: transparent; transition: all 0.2s ease; border: none; }
+.fv-seg { padding: 8px 12px; font-size: 14px; font-weight: 400; color: #888; border-radius: 0; text-align: center; background: transparent; transition: color 0.15s ease; border: none; }
 .fv-seg.active { font-weight: 700; background: transparent; color: #fff; border: none; }
 
 /* Glassy Exit Button: perfectly centered vertically and horizontally */
@@ -465,7 +459,10 @@ input {
 .fv-tab.active { display: block; }
 
 /* SWIPE TO DELETE LOGIC & LIBRARY ITEMS */
-.fv-list-item-wrap { position: relative; overflow: hidden; border-bottom: none; }
+.fv-list-item-wrap { 
+  position: relative; overflow: hidden; border-bottom: 0.5px solid #222; 
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
 .fv-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
 .fv-list-item { display: flex; align-items: center; padding: 14px 20px; gap: 16px; cursor: pointer; background: #000000; position: relative; z-index: 2; transition: transform 0.2s ease-out; }
 .fv-list-item.swiped { transform: translateX(-80px); }
@@ -486,15 +483,15 @@ input {
   #fvDetailTitleBar { display: none !important;}
   #fvBackBtn { 
      top: 50%; 
-     left: 16px; 
+     left: 24px; 
      transform: translateY(-50%); 
   }
 }
 
 /* "Back" button unified with absolute close button height and perfectly centered vertically */
 #fvBackBtn { 
-  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; background: transparent; font-size: 14px; color: #fff; border: none; font-weight: 400; cursor: pointer; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: transparent; font-size: 16px; color: #fff; border: none; font-weight: 500; cursor: pointer; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
 }
 
 #fvDetailTitleBar { flex: 1; font-size: 17px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -571,7 +568,7 @@ input {
   .fv-detail-info-col { text-align: center;}
   .fv-btn-group { justify-content: center; flex-direction: row; }
 
-  #fvBackBtn { font-size: 14px; font-weight: 400; min-height: 44px; padding: 0 20px; }
+  #fvBackBtn { font-size: 16px; font-weight: 500; min-height: 44px; padding: 0 20px; }
 
   /* Restore and Fix Landscape Song Layout */
   .fv-song-layout {
@@ -710,7 +707,15 @@ input {
       
       <div id="fvDetail">
         <div id="fvDetailHeader">
-          <button id="fvBackBtn">Library</button>
+          <button id="fvBackBtn">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <rect x="0.5" y="2.5" width="14" height="10" rx="1.5" stroke="#fff" stroke-width="1.1"/>
+              <rect x="2.5" y="4.5" width="4" height="6" rx="0.5" fill="#ddd"/>
+              <line x1="8" y1="5.5" x2="12" y2="5.5" stroke="#ddd" stroke-width="1.1" stroke-linecap="round"/>
+              <line x1="8" y1="7.5" x2="12" y2="7.5" stroke="#aaa" stroke-width="1.1" stroke-linecap="round"/>
+            </svg>
+            Library
+          </button>
           <div id="fvDetailTitleBar"></div>
         </div>
         <div id="fvDetailContent"></div>
@@ -917,11 +922,10 @@ async function getCoverCanvas(item, size) {
   return drawPlaceholderCover(size, item ? item._slot || 0 : 0);
 }
 
-// Generates a proper cropped Data URL safely formatted for the MediaSession Lock Screen
 async function getMediaSessionArt(item) {
   if (!item || !item.coverId) return null;
   if (MEDIA_ART_CACHE[item.coverId]) return MEDIA_ART_CACHE[item.coverId];
-  const canvas = await getCoverCanvas(item, 512); // Standard Lock Screen size natively
+  const canvas = await getCoverCanvas(item, 512); 
   const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
   MEDIA_ART_CACHE[item.coverId] = dataUrl;
   return dataUrl;
@@ -969,7 +973,6 @@ async function buildCoverFlow() {
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
     
-    // Tap verification applied to prevent swipes from triggering clicks
     wrap.onclick = (e) => {
        if (cfMoved) {
           e.preventDefault();
@@ -980,7 +983,6 @@ async function buildCoverFlow() {
        if (current === i) {
           togglePlayCurrentItem();
        } else if (!isPortrait) {
-          // Snap functionality disabled safely for portrait mode
           setCurrent(i);
        }
     };
@@ -1003,7 +1005,6 @@ function layoutCoverFlow() {
     const diff = i - current;
     const absDiff = Math.abs(diff);
     
-    // Virtual Rendering Performance Fix: DOM culling for hidden distant items
     if (absDiff > 6) {
        node.style.display = 'none';
        return;
@@ -1145,7 +1146,6 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   
   setTimeout(evaluateMarqueeNP, 50);
 
-  // Await the cropped data URL to prevent race conditions during rapid track skipping
   const artDataUrl = await getMediaSessionArt(albumItem);
 
   if ('mediaSession' in navigator) {
@@ -1237,7 +1237,6 @@ async function playPrevTrack() {
 document.getElementById('npPrevBtn').addEventListener('click', playPrevTrack);
 document.getElementById('npNextBtn').addEventListener('click', playNextTrack);
 
-// Clickable Now Playing area to open detail view
 document.getElementById('npInfoWrap').onclick = () => {
   if (!currentlyPlayingId) return;
   const { item } = findTrackInLibrary(currentlyPlayingId);
@@ -1268,9 +1267,9 @@ async function togglePlayCurrentItem() {
 /* ================================================================
    FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
-document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); renderAllTabs(); };
+document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
 if(document.getElementById('portLibraryBtn')) {
-  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); renderAllTabs(); };
+  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
 }
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
@@ -1301,7 +1300,6 @@ async function renderAllTabs() {
   await renderTab('tabAlbums', library.filter(i => i.type === 'album')); 
 }
 
-// Drag and Drop Helper Function
 function getDragAfterElement(container, y) {
   const draggableElements = [...container.querySelectorAll('.fv-list-item-wrap:not(.dragging)')];
   return draggableElements.reduce((closest, child) => {
@@ -1317,9 +1315,7 @@ function getDragAfterElement(container, y) {
 
 async function renderTab(id, items) {
   const tab = document.getElementById(id); 
-  tab.innerHTML = ''; 
 
-  // Initialize dropzone for drag-and-drop if not already done
   if (!tab.dataset.dndInit) {
     tab.dataset.dndInit = "true";
     tab.addEventListener('dragover', (e) => {
@@ -1338,7 +1334,6 @@ async function renderTab(id, items) {
       e.preventDefault();
       const newOrderIds = Array.from(tab.querySelectorAll('.fv-list-item-wrap')).map(el => el.dataset.id);
       
-      // Update the main library sorting based on dragged position
       library.sort((a, b) => {
           let idxA = newOrderIds.indexOf(a.id);
           let idxB = newOrderIds.indexOf(b.id);
@@ -1347,7 +1342,6 @@ async function renderTab(id, items) {
           return idxA - idxB;
       });
       
-      // Save new slots to DB
       for (let i = 0; i < library.length; i++) {
           library[i]._slot = i;
           await dbPut('albums', library[i].id, JSON.parse(JSON.stringify(library[i])));
@@ -1356,17 +1350,18 @@ async function renderTab(id, items) {
     });
   }
 
-  if (!items.length) { return; }
-  for (const i of items) {
+  if (!items.length) { tab.innerHTML = ''; return; }
+
+  // Batch DOM building fragment to prevent UI flashing
+  const fragment = document.createDocumentFragment();
+
+  const nodePromises = items.map(async (i) => {
     const wrap = document.createElement('div'); wrap.className = 'fv-list-item-wrap';
     
-    // Setup Native Drag and Drop
     wrap.draggable = true;
     wrap.dataset.id = i.id;
     wrap.addEventListener('dragstart', (e) => {
-        // Haptic Feedback Trigger for Drag Start
         if (navigator.vibrate) navigator.vibrate(50); 
-        
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', i.id);
         wrap.classList.add('dragging');
@@ -1380,7 +1375,11 @@ async function renderTab(id, items) {
     const delBtn = document.createElement('div'); delBtn.className = 'fv-delete-btn'; delBtn.textContent = 'Delete';
     delBtn.onclick = async (e) => { e.stopPropagation(); await deleteLibraryItem(i.id); }; wrap.appendChild(delBtn);
     const r = document.createElement('div'); r.className = 'fv-list-item'; 
-    const artWrap = document.createElement('div'); artWrap.className = 'fv-item-art'; artWrap.appendChild(await getCoverCanvas(i, 54)); r.appendChild(artWrap);
+    const artWrap = document.createElement('div'); artWrap.className = 'fv-item-art'; 
+    
+    const canvas = await getCoverCanvas(i, 54);
+    artWrap.appendChild(canvas); r.appendChild(artWrap);
+    
     const inf = document.createElement('div'); inf.className = 'fv-item-info'; inf.innerHTML = `<div class="fv-item-title">${i.title}</div><div class="fv-item-sub">${i.artist}</div>`; r.appendChild(inf);
     
     let startX = 0, currentX = 0, isSwiping = false;
@@ -1402,8 +1401,15 @@ async function renderTab(id, items) {
       if(r.classList.contains('swiped')) { r.style.transform = ''; r.classList.remove('swiped'); return; }
       currentItemForDetail = i; renderDetailView(); document.getElementById('fvDetail').classList.add('open'); 
     }; 
-    wrap.appendChild(r); tab.appendChild(wrap);
-  }
+    wrap.appendChild(r);
+    return wrap;
+  });
+
+  const nodes = await Promise.all(nodePromises);
+  
+  tab.innerHTML = '';
+  nodes.forEach(n => fragment.appendChild(n));
+  tab.appendChild(fragment);
 }
 
 const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm = 1; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; };
@@ -1525,7 +1531,7 @@ cfStage.addEventListener('touchmove', e => {
 cfStage.addEventListener('touchend', e => { 
   const dx = e.changedTouches[0].clientX - touchStartX; 
   if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); 
-  setTimeout(() => cfMoved = false, 50); // Reset after click eval window
+  setTimeout(() => cfMoved = false, 50); 
 });
 
 let mouseX = 0, mouseY = 0, dragging = false;
@@ -1568,7 +1574,10 @@ async function init() {
   } else {
     current = 0;
   }
+  
   setTimeout(buildCoverFlow, 150);
+  await renderAllTabs(); 
+  
   setTimeout(() => {
     const fadeScreen = document.getElementById('startupFade');
     if(fadeScreen) { fadeScreen.style.opacity = '0'; setTimeout(() => fadeScreen.style.display = 'none', 1000); }
