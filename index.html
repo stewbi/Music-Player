@@ -880,6 +880,17 @@ function drawPlaceholderCover(size, seed) {
 }
 
 async function getCoverCanvas(item, size) {
+  let seed = 0;
+  if (item && item.id) {
+    // Generate a permanent, stable hash based on the song's unique ID string
+    for (let i = 0; i < item.id.length; i++) {
+      seed = item.id.charCodeAt(i) + ((seed << 5) - seed);
+    }
+    seed = Math.abs(seed);
+  } else if (item) {
+    seed = item._slot || 0;
+  }
+
   if (item && item.coverId) {
     const blob = await dbGet('blobs', item.coverId).catch(() => null);
     if (blob) {
@@ -919,12 +930,12 @@ async function getCoverCanvas(item, size) {
 
           res(finalCanvas);
         };
-        img.onerror = () => res(drawPlaceholderCover(size, item ? item._slot || 0 : 0));
+        img.onerror = () => res(drawPlaceholderCover(size, seed));
         img.src = url;
       });
     }
   }
-  return drawPlaceholderCover(size, item ? item._slot || 0 : 0);
+  return drawPlaceholderCover(size, seed);
 }
 
 async function getMediaSessionArt(item) {
