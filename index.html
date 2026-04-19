@@ -1024,8 +1024,8 @@ function layoutCoverFlow() {
   const albumTop = baseTop + 15 - 10; 
   
   cfNodes.forEach((node, i) => {
-    // Reverse Mapping: Index 0 (Top) is Right, Index N (Bottom) is Left
-    const diff = current - i; 
+    // Standard Mapping: Index 0 (Top) is Left, Index N (Bottom) is Right
+    const diff = i - current; 
     const absDiff = Math.abs(diff);
     
     if (absDiff > 6) {
@@ -1557,8 +1557,8 @@ cfStage.addEventListener('touchmove', e => {
 
 cfStage.addEventListener('touchend', e => { 
   const dx = e.changedTouches[0].clientX - touchStartX; 
-  // Inverted swipe to match reversed visual layout mapping
-  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? -1 : 1)); 
+  // Standard swipe mapping
+  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); 
   setTimeout(() => cfMoved = false, 50); 
 });
 
@@ -1577,8 +1577,8 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mouseup', e => { 
   if (!dragging) return; dragging = false; 
   const dx = e.clientX - mouseX; 
-  // Inverted swipe to match reversed visual layout mapping
-  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? -1 : 1)); 
+  // Standard swipe mapping
+  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); 
   setTimeout(() => cfMoved = false, 50);
 });
 
