@@ -1302,8 +1302,13 @@ async function deleteLibraryItem(id) {
   showToast('Deleted');
 }
 
+/* Fix: The "Recents" tab was previously using `.sort((a, b) => b.uploadDate - a.uploadDate)`.
+  This hidden sort caused the UI list to reverse itself against the master Cover Flow layout. 
+  By removing the sort, the Library Menu becomes a pristine 1-to-1 reflection of your exact 
+  custom ordering, permanently solving the flip-flop bug.
+*/
 async function renderAllTabs() { 
-  await renderTab('tabRecent', [...library].sort((a, b) => b.uploadDate - a.uploadDate)); 
+  await renderTab('tabRecent', library); 
   await renderTab('tabSongs', library.filter(i => i.type === 'song')); 
   await renderTab('tabAlbums', library.filter(i => i.type === 'album')); 
 }
@@ -1364,10 +1369,11 @@ async function renderTab(id, items) {
           }
       });
       
-      for (let i = 0; i < library.length; i++) {
-          library[i]._slot = i;
-          await dbPut('albums', library[i].id, JSON.parse(JSON.stringify(library[i])));
-      }
+      // Lightning fast re-index saving logic
+      await Promise.all(library.map((item, index) => {
+          item._slot = index;
+          return dbPut('albums', item.id, JSON.parse(JSON.stringify(item)));
+      }));
 
       if (currentItemId) {
          current = library.findIndex(i => i.id === currentItemId);
@@ -1503,18 +1509,33 @@ document.getElementById('editConfirm').onclick = async () => {
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
 document.getElementById('importSongBtn').onclick = () => document.getElementById('audioInput').click();
 
+/* Fix: Unshifting new items pushes them directly to the top of the actual library array, 
+  so "Recents" behaves perfectly without needing to override the sort order. 
+*/
 document.getElementById('audioInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f) return; 
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
-  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: library.length, size: f.size }; 
-  library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); setCurrent(library.length - 1); renderAllTabs(); e.target.value = '';
+  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: 0, size: f.size }; 
+  library.unshift(i); 
+  await Promise.all(library.map((item, index) => {
+      item._slot = index;
+      return dbPut('albums', item.id, JSON.parse(JSON.stringify(item)));
+  }));
+  await buildCoverFlow(); setCurrent(0); renderAllTabs(); e.target.value = '';
 };
+
 document.getElementById('newAlbumBtn2').onclick = () => { document.getElementById('newAlbumModal').classList.add('open'); };
 document.getElementById('albumModalCreate').onclick = async () => { 
   const t = document.getElementById('newAlbumTitle').value; const a = document.getElementById('newAlbumArtist').value; if (!t) return; 
-  const id = genId(); const i = { id, type: 'album', title: t, artist: a || 'Unknown Artist', coverId: null, tracks: [], uploadDate: Date.now(), _slot: library.length }; 
-  library.push(i); await dbPut('albums', id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); document.getElementById('newAlbumModal').classList.remove('open'); renderAllTabs(); 
+  const id = genId(); const i = { id, type: 'album', title: t, artist: a || 'Unknown Artist', coverId: null, tracks: [], uploadDate: Date.now(), _slot: 0 }; 
+  library.unshift(i); 
+  await Promise.all(library.map((item, index) => {
+      item._slot = index;
+      return dbPut('albums', item.id, JSON.parse(JSON.stringify(item)));
+  }));
+  await buildCoverFlow(); document.getElementById('newAlbumModal').classList.remove('open'); renderAllTabs(); 
 };
+
 document.getElementById('albumModalCancel').onclick = () => document.getElementById('newAlbumModal').classList.remove('open');
 document.getElementById('pickAudioRow').onclick = () => document.getElementById('trackAudioInput').click();
 document.getElementById('trackAudioInput').onchange = e => { const f = e.target.files[0]; if (f) document.getElementById('pickAudioLabel').textContent = f.name; };
