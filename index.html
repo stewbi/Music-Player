@@ -337,13 +337,13 @@ input {
   
   /* Portrait Threshold Boundary Constraints */
   #portTitleWrap, #portArtistWrap {
-    max-width: calc(100vw - 180px);
+    width: calc(100vw - 180px); /* Changed to absolute width to prevent flash expansion */
     margin: 0 auto;
-    overflow: hidden; /* Added to stop flash spilling outside boundary */
+    overflow: hidden; 
     white-space: nowrap;
   }
   #portTitleWrap {
-    display: block; /* Modified to block to properly anchor text and stop centering clip */
+    display: block; 
     text-align: center;
   }
   #portArtistWrap {
@@ -945,16 +945,18 @@ const artistEl = document.getElementById('cfArtist');
 let cfNodes = [];
 
 async function buildCoverFlow() {
-  document.getElementById('cfTrack').innerHTML = '';
-  cfNodes = [];
+  const track = document.getElementById('cfTrack');
   const items = library.length > 0 ? library : [{_empty: true, title: 'Howdy!', artist: 'Add music to Music Library'}];
+  
+  const newNodes = [];
+  const fragment = document.createDocumentFragment();
   
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     
     const wrap = document.createElement('div'); 
     wrap.className = 'cf-album';
-    
+    wrap.dataset.id = item.id;
     wrap.style.opacity = '1.0'; 
     if(item._empty) wrap.style.opacity = '0.25';
     
@@ -991,9 +993,13 @@ async function buildCoverFlow() {
           setCurrent(i);
        }
     };
-    document.getElementById('cfTrack').appendChild(wrap); 
-    cfNodes.push(wrap);
+    fragment.appendChild(wrap); 
+    newNodes.push(wrap);
   }
+  
+  track.innerHTML = '';
+  track.appendChild(fragment);
+  cfNodes = newNodes;
   layoutCoverFlow();
 }
 
@@ -1007,7 +1013,8 @@ function layoutCoverFlow() {
   const albumTop = baseTop + 15 - 10; 
   
   cfNodes.forEach((node, i) => {
-    const diff = i - current;
+    // Reverse Mapping: Index 0 (Top) is Right, Index N (Bottom) is Left
+    const diff = current - i; 
     const absDiff = Math.abs(diff);
     
     if (absDiff > 6) {
@@ -1072,8 +1079,9 @@ function layoutCoverFlow() {
      }
   });
   
-  setTimeout(evaluateMarqueeCenter, 0);
-  setTimeout(evaluateMarqueeNP, 0);
+  // Synchronous evaluations eliminate frame flash
+  evaluateMarqueeCenter();
+  evaluateMarqueeNP();
 }
 
 function setCurrent(i) { 
@@ -1083,7 +1091,7 @@ function setCurrent(i) {
 }
 
 /* ================================================================
-   AUDIO PLAYER & DYNAMIC MARQUEE EVALUATION
+   AUDIO PLAYER & DYNAMIC MARQUEE EVALUATION (SYNCHRONOUS REFLOW)
 ================================================================ */
 const audioEl = document.getElementById('audioPlayer');
 const npScrubber = document.getElementById('npScrubber');
@@ -1100,40 +1108,23 @@ function _evaluateMarqueeInternal(ids) {
     
     if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
         parent.classList.remove('needs-mask');
-        if (el.scrollWidth > parent.clientWidth) {
-          el.style.setProperty('--mw', parent.clientWidth + 'px');
-          el.classList.add('scroll');
-          parent.classList.add('needs-mask'); 
-        }
-    } else {
-        if (el.scrollWidth > parent.clientWidth) {
-          el.style.setProperty('--mw', parent.clientWidth + 'px');
-          el.classList.add('scroll');
-        }
+    }
+    
+    // Force layout engine reflow to lock in text width instantly before next frame paint
+    void el.offsetWidth;
+
+    if (el.scrollWidth > parent.clientWidth) {
+      el.style.setProperty('--mw', parent.clientWidth + 'px');
+      el.classList.add('scroll');
+      if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
+         parent.classList.add('needs-mask'); 
+      }
     }
   });
 }
 
 function evaluateMarqueeCenter() { _evaluateMarqueeInternal(['cfTitle', 'cfArtist']); }
-
-function evaluateMarqueeNP() {
-  ['npTitle', 'npArtist', 'portTitle', 'portArtist'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('scroll');
-    el.style.transform = 'none';
-    
-    const parent = el.parentElement;
-    if (parent.classList.contains('marquee-wrap') || parent.id === 'portTitleWrap' || parent.id === 'portArtistWrap') {
-        parent.classList.remove('needs-mask');
-        if (el.scrollWidth > parent.clientWidth) {
-          el.style.setProperty('--mw', parent.clientWidth + 'px');
-          el.classList.add('scroll');
-          parent.classList.add('needs-mask');
-        }
-    }
-  });
-}
+function evaluateMarqueeNP() { _evaluateMarqueeInternal(['npTitle', 'npArtist', 'portTitle', 'portArtist']); }
 
 async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   const blob = await dbGet('blobs', trackId).catch(() => null); 
@@ -1149,7 +1140,8 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
   
-  setTimeout(evaluateMarqueeNP, 0);
+  // Directly evaluate without setTimeout
+  evaluateMarqueeNP();
 
   const artDataUrl = await getMediaSessionArt(albumItem);
 
@@ -1341,7 +1333,6 @@ async function renderTab(id, items) {
       
       const currentItemId = library[current]?.id;
       
-      // Keep track of exactly which slots in the master library these items occupy
       const masterIndices = [];
       const itemsToReorder = [];
 
@@ -1353,10 +1344,8 @@ async function renderTab(id, items) {
          }
       });
 
-      // Sort master indices to know which slots are available
       masterIndices.sort((a, b) => a - b);
 
-      // Re-map the newly ordered items directly back into the exact same available slots
       newOrderIds.forEach((id, i) => {
           const item = itemsToReorder.find(x => x.id === id);
           if(item) {
@@ -1364,13 +1353,11 @@ async function renderTab(id, items) {
           }
       });
       
-      // Save and sync slots
       for (let i = 0; i < library.length; i++) {
           library[i]._slot = i;
           await dbPut('albums', library[i].id, JSON.parse(JSON.stringify(library[i])));
       }
 
-      // Re-align Cover Flow's current index so it doesn't visually snap to a new song
       if (currentItemId) {
          current = library.findIndex(i => i.id === currentItemId);
          if (current === -1) current = 0;
@@ -1382,7 +1369,6 @@ async function renderTab(id, items) {
 
   if (!items.length) { tab.innerHTML = ''; return; }
 
-  // Batch DOM building fragment to prevent UI flashing
   const fragment = document.createDocumentFragment();
 
   const nodePromises = items.map(async (i) => {
@@ -1560,7 +1546,8 @@ cfStage.addEventListener('touchmove', e => {
 
 cfStage.addEventListener('touchend', e => { 
   const dx = e.changedTouches[0].clientX - touchStartX; 
-  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); 
+  // Inverted swipe to match reversed visual layout mapping
+  if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? -1 : 1)); 
   setTimeout(() => cfMoved = false, 50); 
 });
 
@@ -1579,7 +1566,8 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mouseup', e => { 
   if (!dragging) return; dragging = false; 
   const dx = e.clientX - mouseX; 
-  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); 
+  // Inverted swipe to match reversed visual layout mapping
+  if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? -1 : 1)); 
   setTimeout(() => cfMoved = false, 50);
 });
 
