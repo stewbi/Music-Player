@@ -938,7 +938,7 @@ let cfNodes = [];
 async function buildCoverFlow() {
   document.getElementById('cfTrack').innerHTML = '';
   cfNodes = [];
-  const items = library.length > 0 ? library : [{_empty: true, title: 'CoverFlow', artist: 'Add music to Music Library'}];
+  const items = library.length > 0 ? library : [{_empty: true, title: 'Howdy!', artist: 'Add music to Music Library'}];
   
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -1045,7 +1045,7 @@ function layoutCoverFlow() {
   
   document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
   
-  const items = library.length > 0 ? library : [{title: 'CoverFlow', artist: 'Add music to Music Library', _empty: true}];
+  const items = library.length > 0 ? library : [{title: 'Howdy!', artist: 'Add music to Music Library', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
   
   const tText = item.title || (item._empty ? '—' : item.title);
