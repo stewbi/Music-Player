@@ -274,7 +274,7 @@ input {
 #npInfo { 
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
 }
-.marquee-wrap { width: 100%; overflow: visible; display: flex; align-items: center; }
+.marquee-wrap { width: 100%; overflow: hidden; display: flex; align-items: center; }
 
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
@@ -339,9 +339,12 @@ input {
   #portTitleWrap, #portArtistWrap {
     max-width: calc(100vw - 180px);
     margin: 0 auto;
+    overflow: hidden; /* Added to stop flash spilling outside boundary */
+    white-space: nowrap;
   }
   #portTitleWrap {
-    overflow: visible; display: flex; align-items: center; justify-content: center;
+    display: block; /* Modified to block to properly anchor text and stop centering clip */
+    text-align: center;
   }
   #portArtistWrap {
     display: block;
@@ -362,9 +365,9 @@ input {
   }
 
   /* Dynamic Title */
-  #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; }
+  #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; display: inline-block; }
   /* Static Artist */
-  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); }
+  #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); display: inline-block;}
 
   .port-canvas-container {
     width: min(75vw, 340px); 
@@ -452,7 +455,8 @@ input {
 #fvContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
   -ms-overflow-style: none; scrollbar-width: none;
-  padding-bottom: max(140px, env(safe-area-inset-bottom, 20px) + 100px); /* Massive clearance to clear the fade mask entirely */
+  /* Removed massive 140px clearance to kill the bottom black cutoff */
+  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px); 
 }
 #fvContent::-webkit-scrollbar { display: none; }
 .fv-tab { display: none; }
@@ -498,7 +502,8 @@ input {
 
 #fvDetailContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; 
-  padding: 18px 20px max(140px, env(safe-area-inset-bottom) + 100px) 20px;
+  /* Removed massive clearance to kill the bottom black cutoff */
+  padding: 18px 20px calc(env(safe-area-inset-bottom, 20px) + 20px) 20px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 #fvDetailContent::-webkit-scrollbar { display: none; }
@@ -1067,8 +1072,8 @@ function layoutCoverFlow() {
      }
   });
   
-  setTimeout(evaluateMarqueeCenter, 50);
-  setTimeout(evaluateMarqueeNP, 50);
+  setTimeout(evaluateMarqueeCenter, 0);
+  setTimeout(evaluateMarqueeNP, 0);
 }
 
 function setCurrent(i) { 
@@ -1144,7 +1149,7 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   document.getElementById('npTitle').textContent = trackTitle || 'Unknown Track'; 
   document.getElementById('npArtist').textContent = albumItem?.artist || '';
   
-  setTimeout(evaluateMarqueeNP, 50);
+  setTimeout(evaluateMarqueeNP, 0);
 
   const artDataUrl = await getMediaSessionArt(albumItem);
 
@@ -1334,18 +1339,43 @@ async function renderTab(id, items) {
       e.preventDefault();
       const newOrderIds = Array.from(tab.querySelectorAll('.fv-list-item-wrap')).map(el => el.dataset.id);
       
-      library.sort((a, b) => {
-          let idxA = newOrderIds.indexOf(a.id);
-          let idxB = newOrderIds.indexOf(b.id);
-          if (idxA === -1) idxA = 9999;
-          if (idxB === -1) idxB = 9999;
-          return idxA - idxB;
+      const currentItemId = library[current]?.id;
+      
+      // Keep track of exactly which slots in the master library these items occupy
+      const masterIndices = [];
+      const itemsToReorder = [];
+
+      newOrderIds.forEach(id => {
+         const idx = library.findIndex(item => item.id === id);
+         if(idx !== -1) {
+            masterIndices.push(idx);
+            itemsToReorder.push(library[idx]);
+         }
+      });
+
+      // Sort master indices to know which slots are available
+      masterIndices.sort((a, b) => a - b);
+
+      // Re-map the newly ordered items directly back into the exact same available slots
+      newOrderIds.forEach((id, i) => {
+          const item = itemsToReorder.find(x => x.id === id);
+          if(item) {
+              library[masterIndices[i]] = item;
+          }
       });
       
+      // Save and sync slots
       for (let i = 0; i < library.length; i++) {
           library[i]._slot = i;
           await dbPut('albums', library[i].id, JSON.parse(JSON.stringify(library[i])));
       }
+
+      // Re-align Cover Flow's current index so it doesn't visually snap to a new song
+      if (currentItemId) {
+         current = library.findIndex(i => i.id === currentItemId);
+         if (current === -1) current = 0;
+      }
+
       await buildCoverFlow();
     });
   }
