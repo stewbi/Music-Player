@@ -977,19 +977,12 @@ async function getCoverCanvas(item, size) {
   return drawPlaceholderCover(size, seed);
 }
 
-// Updated Issue 4: Generate actual Blob URLs for Apple AirPlay metadata to ingest instead of Base64
+// Updated Fix: Route the artwork back through the Canvas to force 1:1 cropping,
+// and serve it as a Data URL so iOS system components (Dynamic Island/Lockscreen) can read it natively.
 async function getMediaSessionArt(item) {
   if (!item || !item.coverId) return null;
   if (MEDIA_ART_CACHE[item.coverId]) return MEDIA_ART_CACHE[item.coverId];
-  
-  const blob = await dbGet('blobs', item.coverId).catch(() => null);
-  if (blob) {
-    const url = URL.createObjectURL(blob);
-    MEDIA_ART_CACHE[item.coverId] = url;
-    return url;
-  }
 
-  // Fallback to data URL
   const canvas = await getCoverCanvas(item, 512); 
   const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
   MEDIA_ART_CACHE[item.coverId] = dataUrl;
@@ -1183,7 +1176,6 @@ function _evaluateMarqueeInternal(ids) {
 function evaluateMarqueeCenter() { _evaluateMarqueeInternal(['cfTitle', 'cfArtist']); }
 function evaluateMarqueeNP() { _evaluateMarqueeInternal(['npTitle', 'npArtist', 'portTitle', 'portArtist']); }
 
-// Updated Issue 4: Restructured to force Apple's AirPlay API to read metadata BEFORE triggering media playback
 async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   const blob = await dbGet('blobs', trackId).catch(() => null); 
   if (!blob) { showToast('Audio not found'); return; }
@@ -1194,11 +1186,21 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
 
   // 2. Lock Apple Media Session Metadata
   if ('mediaSession' in navigator) {
+    // Provide iOS with multiple size options so Dynamic Island (small) and AirPlay (large) both load perfectly
+    const artworkArray = artUrl ? [
+      { src: artUrl, sizes: '96x96', type: 'image/jpeg' },
+      { src: artUrl, sizes: '128x128', type: 'image/jpeg' },
+      { src: artUrl, sizes: '192x192', type: 'image/jpeg' },
+      { src: artUrl, sizes: '256x256', type: 'image/jpeg' },
+      { src: artUrl, sizes: '384x384', type: 'image/jpeg' },
+      { src: artUrl, sizes: '512x512', type: 'image/jpeg' }
+    ] : [];
+
     navigator.mediaSession.metadata = new MediaMetadata({
       title: trackTitle || 'Unknown Track',
       artist: albumItem?.artist || 'Unknown Artist',
       album: albumItem?.title || '',
-      artwork: artUrl ? [{ src: artUrl, sizes: '512x512', type: 'image/jpeg' }] : []
+      artwork: artworkArray
     });
     navigator.mediaSession.setActionHandler('play', () => { audioEl.play().catch(()=>{}); isPlaying = true; updatePlayIcon(); });
     navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); isPlaying = false; updatePlayIcon(); });
@@ -1254,7 +1256,6 @@ audioEl.ontimeupdate = () => {
 npScrubber.oninput = () => { isScrubbing = true; npProgressBar.style.width = npScrubber.value + '%'; };
 npScrubber.onchange = () => { if (audioEl.duration) { audioEl.currentTime = (npScrubber.value / 100) * audioEl.duration; } isScrubbing = false; };
 
-// Updated Issue 1: Handle native End of Track looping vs playing next
 audioEl.addEventListener('ended', () => { 
   if (isRepeat) {
     audioEl.currentTime = 0;
@@ -1281,7 +1282,6 @@ function findTrackInLibrary(trackId) {
   return { item: null, idx: -1 };
 }
 
-// Updated Issue 1: Helper function to grab a random track from your database
 function getRandomTrack() {
   const allTracks = [];
   library.forEach(item => {
@@ -1292,14 +1292,12 @@ function getRandomTrack() {
   if (allTracks.length === 0) return null;
   let nextT = allTracks[Math.floor(Math.random() * allTracks.length)];
   
-  // Prevent immediate repetition of the identical song if possible
   if (allTracks.length > 1 && nextT.trackId === currentlyPlayingId) {
      nextT = allTracks[(allTracks.indexOf(nextT) + 1) % allTracks.length];
   }
   return nextT;
 }
 
-// Updated Issue 1: playNextTrack honors Shuffle variables
 async function playNextTrack() {
   if (!currentlyPlayingId) return;
   
@@ -1331,7 +1329,6 @@ async function playNextTrack() {
   }
 }
 
-// Updated Issue 1: playPrevTrack honors Shuffle variables
 async function playPrevTrack() {
   if (!currentlyPlayingId) return;
 
