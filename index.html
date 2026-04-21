@@ -526,15 +526,29 @@ input {
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fv-item-duration { font-size: 13px; color: #888; margin-left: 10px; flex-shrink: 0;}
 
-/* Animated Visualizer CSS */
-.fv-visualizer { display: none; align-items: flex-end; gap: 2px; height: 14px; width: 14px; margin-right: 12px; flex-shrink: 0; }
-.fv-visualizer.active { display: flex; }
-.fv-vis-bar { width: 3px; background-color: #888; animation: bounce 0.8s infinite alternate ease-in-out; border-radius: 1px;}
-.fv-vis-bar:nth-child(1) { animation-delay: 0s; height: 60%; }
-.fv-vis-bar:nth-child(2) { animation-delay: 0.2s; height: 100%; }
-.fv-vis-bar:nth-child(3) { animation-delay: 0.4s; height: 80%; }
-.fv-visualizer.paused .fv-vis-bar { animation-play-state: paused; height: 3px; }
-@keyframes bounce { 0% { transform: scaleY(0.3); } 100% { transform: scaleY(1); } }
+/* Animated Visualizer CSS - Smooth Slide & Scale */
+.fv-visualizer { 
+  display: flex; align-items: flex-end; gap: 2px; height: 14px; 
+  width: 0px; opacity: 0; margin-right: 0px; overflow: hidden; flex-shrink: 0;
+  transition: width 0.4s cubic-bezier(0.3, 0, 0.2, 1), opacity 0.4s ease, margin 0.4s ease; 
+}
+.fv-visualizer.active { width: 13px; opacity: 1; margin-right: 12px; }
+.fv-vis-bar { 
+  width: 3px; background-color: #888; border-radius: 1px; 
+  height: 100%; transform-origin: bottom; transform: scaleY(0.25);
+  transition: transform 0.4s ease-out;
+}
+.fv-visualizer.playing .fv-vis-bar { animation: fv-bounce 0.7s infinite alternate ease-in-out; }
+.fv-visualizer.playing .fv-vis-bar:nth-child(1) { animation-delay: 0s; }
+.fv-visualizer.playing .fv-vis-bar:nth-child(2) { animation-delay: 0.2s; }
+.fv-visualizer.playing .fv-vis-bar:nth-child(3) { animation-delay: 0.4s; }
+
+.fv-visualizer.paused .fv-vis-bar { animation: none; transform: scaleY(0.25); }
+
+@keyframes fv-bounce { 
+  0% { transform: scaleY(0.25); } 
+  100% { transform: scaleY(1); } 
+}
 
 /* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
@@ -840,6 +854,7 @@ let currentlyPlayingId = null;
 let isPlaying = false;
 let BLOBURL_CACHE = {};  
 let currentItemForDetail = null;
+let currentDetailIsEditMode = false; /* Keeps track of current edit state for rotation */
 let pendingTrackAlbumId = null;
 let coverChangeTargetId = null;
 let editTargetItem = null;
@@ -1178,10 +1193,15 @@ function updateVisualizers() {
     document.querySelectorAll('.fv-visualizer').forEach(vis => {
         if (vis.dataset.audioId === currentlyPlayingId) {
             vis.classList.add('active');
-            if (isPlaying) vis.classList.remove('paused');
-            else vis.classList.add('paused');
+            if (isPlaying) { 
+               vis.classList.remove('paused'); 
+               vis.classList.add('playing'); 
+            } else { 
+               vis.classList.remove('playing'); 
+               vis.classList.add('paused'); 
+            }
         } else {
-            vis.classList.remove('active');
+            vis.classList.remove('active', 'playing', 'paused');
         }
     });
 }
@@ -1580,7 +1600,14 @@ async function renderTab(id, items) {
     });
 
     const editBtn = document.createElement('div'); editBtn.className = 'fv-edit-btn'; editBtn.textContent = 'Edit';
-    editBtn.onclick = (e) => { e.stopPropagation(); currentItemForDetail = i; r.classList.remove('swiped-right'); if(i.type === 'album') { renderDetailView(true); document.getElementById('fvDetail').classList.add('open'); } else { openEditModal(); } }; wrap.appendChild(editBtn);
+    editBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        currentItemForDetail = i; 
+        r.classList.remove('swiped-right'); 
+        renderDetailView(true); // Always push perfectly to full Edit screen
+        document.getElementById('fvDetail').classList.add('open');
+    }; 
+    wrap.appendChild(editBtn);
 
     const delBtn = document.createElement('div'); delBtn.className = 'fv-delete-btn'; delBtn.textContent = 'Delete';
     delBtn.onclick = async (e) => { e.stopPropagation(); await deleteLibraryItem(i.id); }; wrap.appendChild(delBtn);
@@ -1597,12 +1624,15 @@ async function renderTab(id, items) {
     
     inf.innerHTML = `${visHtml}<div class="fv-item-info-text"><div class="fv-item-title">${i.title}</div><div class="fv-item-sub">${i.artist}</div></div>`; 
     
-    let trackDurText = '—';
-    if(i.type === 'song' && i.duration) trackDurText = formatTime(i.duration);
-    const durSpan = document.createElement('div'); durSpan.className = 'fv-item-duration'; durSpan.textContent = trackDurText;
-    
     r.appendChild(inf);
-    r.appendChild(durSpan);
+    
+    if (i.type === 'song') {
+        let trackDurText = i.duration ? formatTime(i.duration) : '—';
+        const durSpan = document.createElement('div'); 
+        durSpan.className = 'fv-item-duration'; 
+        durSpan.textContent = trackDurText;
+        r.appendChild(durSpan);
+    }
     
     let startX = 0, startY = 0, currentX = 0, isSwiping = false, isHorizontal = false;
     r.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; currentX = startX; isSwiping = false; isHorizontal = false; }, {passive: true});
@@ -1671,6 +1701,7 @@ const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm
 const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
 
 async function renderDetailView(isEditMode = true) {
+  currentDetailIsEditMode = isEditMode;
   const i = currentItemForDetail; 
   if (!i) return; 
   
@@ -1930,7 +1961,7 @@ window.addEventListener('mouseup', e => {
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
-  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(); }, 100); 
+  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(currentDetailIsEditMode); }, 100); 
 });
 
 async function init() { 
