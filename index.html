@@ -202,7 +202,7 @@ input {
   mask-image: linear-gradient(to right, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%);
 }
 
-/* ===== AIRPLAY BUTTON (Top Right) ===== */
+/* ===== AIRPLAY BUTTON (Base setup) ===== */
 #airplayBtn {
   position: absolute;
   top: max(env(safe-area-inset-top, 20px), 30px);
@@ -340,8 +340,8 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Restore the Cover Flow in portrait and hide specific other UI */
-  #centerUI, #npInfoWrap, #npLibraryWrap, #portCoverWrap, #airplayBtn { 
+  /* Hide Landscape UI - Keep #npLibraryWrap and #airplayBtn visible */
+  #centerUI, #npInfoWrap, #portCoverWrap { 
     display: none !important; 
   }
 
@@ -380,7 +380,8 @@ input {
   #portTitleWrap { display: block; text-align: center; }
   #portArtistWrap { display: block; text-align: center; }
   
-  #portLibraryBtn {
+  /* New Portrait AirPlay Button styling */
+  #airplayBtn {
     position: absolute;
     top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
     right: 20px;
@@ -391,6 +392,7 @@ input {
     justify-content: center;
     z-index: 150;
     pointer-events: auto;
+    transform: none; /* override landscape transform */
   }
 
   /* Dynamic Title */
@@ -416,20 +418,31 @@ input {
     padding-bottom: max(env(safe-area-inset-bottom, 20px), 40px);
     z-index: 200;
   }
+  
   #nowPlayingBar {
-    flex-direction: column-reverse; 
+    flex-direction: column; /* Scrubber perfectly above the controls */
+  }
+  #npScrubberContainer { 
+    width: 85%; margin: 0 auto 30px auto; 
   }
   #npBarBottom {
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 24px; /* Space between Controls and Music Library Button */
     margin-bottom: 25px;
     padding: 0;
   }
   #npControls {
     position: relative; left: 0; transform: none; gap: 20px;
   }
+  #npLibraryWrap {
+    transform: none; /* Reset the landscape pixel push */
+    justify-content: center;
+    width: 100%;
+  }
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
-  #npScrubberContainer { width: 85%; margin: 0 auto; }
   
   /* FIXED FADE OVERLAY - iPhone 17 Pro Fix */
   #fileViewer::after {
@@ -437,8 +450,10 @@ input {
   }
 }
 
+/* ===== LANDSCAPE SPECIFIC ORIENTATION CSS ===== */
 @media screen and (orientation: landscape) {
   #fileViewer::after { display: none; }
+  #airplayBtn { display: none !important; } /* Hide AirPlay perfectly in Landscape */
 }
 
 /* ===== FILE VIEWER & UI STYLING UPDATE (PITCH BLACK + GLASS) ===== */
@@ -663,14 +678,6 @@ input {
          <div id="portTitleWrap"><div id="portTitle" class="marquee-text">—</div></div>
          <div id="portArtistWrap"><div id="portArtist" class="marquee-text">Add music to Music Library</div></div>
       </div>
-      <button id="portLibraryBtn" aria-label="Open Library">
-         <svg width="24" height="24" viewBox="0 0 15 15" fill="none">
-           <rect x="0.5" y="2.5" width="14" height="10" rx="1.5" stroke="#fff" stroke-width="1.1"/>
-           <rect x="2.5" y="4.5" width="4" height="6" rx="0.5" fill="#ddd"/>
-           <line x1="8" y1="5.5" x2="12" y2="5.5" stroke="#ddd" stroke-width="1.1" stroke-linecap="round"/>
-           <line x1="8" y1="7.5" x2="12" y2="7.5" stroke="#aaa" stroke-width="1.1" stroke-linecap="round"/>
-         </svg>
-      </button>
       <div id="portCoverWrap">
          <div class="port-canvas-container" id="portCanvasContainer"></div>
       </div>
@@ -977,8 +984,6 @@ async function getCoverCanvas(item, size) {
   return drawPlaceholderCover(size, seed);
 }
 
-// Updated Fix: Route the artwork back through the Canvas to force 1:1 cropping,
-// and serve it as a Data URL so iOS system components (Dynamic Island/Lockscreen) can read it natively.
 async function getMediaSessionArt(item) {
   if (!item || !item.coverId) return null;
   if (MEDIA_ART_CACHE[item.coverId]) return MEDIA_ART_CACHE[item.coverId];
@@ -1181,12 +1186,9 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
   if (!blob) { showToast('Audio not found'); return; }
   const url = BLOBURL_CACHE[trackId] || (BLOBURL_CACHE[trackId] = URL.createObjectURL(blob));
   
-  // 1. Load Artwork BEFORE anything else touches the audio player
   const artUrl = await getMediaSessionArt(albumItem);
 
-  // 2. Lock Apple Media Session Metadata
   if ('mediaSession' in navigator) {
-    // Provide iOS with multiple size options so Dynamic Island (small) and AirPlay (large) both load perfectly
     const artworkArray = artUrl ? [
       { src: artUrl, sizes: '96x96', type: 'image/jpeg' },
       { src: artUrl, sizes: '128x128', type: 'image/jpeg' },
@@ -1208,11 +1210,9 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
 
-  // 3. Fallback Title attributes for iOS 
   audioEl.title = trackTitle || 'Unknown Track'; 
   document.title = (trackTitle || 'Unknown Track') + ' - ' + (albumItem?.artist || 'Unknown Artist');
   
-  // 4. Finally, set audio source and variables now that metadata is primed
   audioEl.src = url; 
   currentlyPlayingId = trackId;
 
@@ -1413,9 +1413,6 @@ async function togglePlayCurrentItem() {
    FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
 document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
-if(document.getElementById('portLibraryBtn')) {
-  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
-}
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
 
