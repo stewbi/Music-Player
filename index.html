@@ -20,6 +20,8 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 html, body {
   width: 100%;
@@ -38,6 +40,8 @@ button {
 input {
   outline: none;
   font-family: inherit;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ===== STARTUP FADE ===== */
@@ -274,7 +278,7 @@ input {
 #npScrubber::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 60px; height: 60px; background: transparent !important; border: none !important; box-shadow: none !important; }
 #npScrubber::-moz-range-thumb { width: 60px; height: 60px; background: transparent !important; border: none !important; box-shadow: none !important; }
 #npTimeWrap {
-  position: absolute; bottom: -4px; left: 0; right: 0;
+  position: absolute; bottom: 2px; left: 0; right: 0;
   display: flex; justify-content: space-between; font-size: 11px;
   font-weight: 500; color: #aaa; pointer-events: none;
 }
@@ -1413,6 +1417,9 @@ async function togglePlayCurrentItem() {
    FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
 document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
+if(document.getElementById('portLibraryBtn')) {
+  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
+}
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
 
