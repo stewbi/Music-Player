@@ -183,7 +183,6 @@ input {
   gap: 10px; 
 }
 
-/* Text containers are static in Landscape Center */
 #cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 #cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -196,7 +195,6 @@ input {
   88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
 }
 
-/* Dynamic Mask Class activated only when text is scrolling */
 .needs-mask {
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
@@ -224,7 +222,7 @@ input {
   display: none;
 }
 
-/* ===== BOTTOM UI OVERLAY (Permanently Pinned to Bottom) ===== */
+/* ===== BOTTOM UI OVERLAY ===== */
 #bottomUIWrapper {
   position: absolute;
   bottom: 0;
@@ -278,19 +276,17 @@ input {
 #npScrubber::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 60px; height: 60px; background: transparent !important; border: none !important; box-shadow: none !important; }
 #npScrubber::-moz-range-thumb { width: 60px; height: 60px; background: transparent !important; border: none !important; box-shadow: none !important; }
 #npTimeWrap {
-  /* UPDATE 4: Pushed 10px outwards */
   position: absolute; bottom: 2px; left: -10px; right: -10px;
   display: flex; justify-content: space-between; font-size: 11px;
   font-weight: 500; color: #aaa; pointer-events: none;
 }
 
-/* ===== BOTTOM ROW (Left, Center, Right Mirror) ===== */
+/* ===== BOTTOM ROW ===== */
 #npBarBottom { 
   display: flex; align-items: center; justify-content: space-between; 
   width: 100%; padding: 0 4px; position: relative; pointer-events: auto; 
 }
 
-/* Left: Track Info Thumbnail (LANDSCAPE) */
 #npInfoWrap { 
   display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; 
   max-width: 200px; padding-right: 20px; cursor: pointer; 
@@ -306,7 +302,6 @@ input {
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
 
-/* Center: Playback Controls */
 #npControls {
   position: absolute; left: 50%; transform: translate(-50%, -10px);
   display: flex; align-items: center; gap: 16px; 
@@ -317,7 +312,6 @@ input {
 }
 .np-aux-btn.active { color: #fff; }
 
-/* Adjusted precisely 6px tighter on each side */
 #npShuffleBtn { transform: translateX(-9px); }
 #npRepeatBtn { transform: translateX(9px); }
 
@@ -331,7 +325,6 @@ input {
 #npPlayBtn svg { width: 18px; height: 18px; }
 #npPlayBtn:active { background: rgba(255,255,255,0.2); }
 
-/* Right: Music Library (LANDSCAPE) */
 #npLibraryWrap { 
   display: flex; align-items: center; justify-content: flex-end; flex: 1; 
   transform: translateX(50px); 
@@ -345,7 +338,6 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
-  /* Hide Landscape UI - Keep #npLibraryWrap and #airplayBtn visible */
   #centerUI, #npInfoWrap, #portCoverWrap { 
     display: none !important; 
   }
@@ -356,7 +348,6 @@ input {
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
 
-  /* Display Portrait elements with proper spacing constraints */
   #portView {
     display: flex;
     flex-direction: column;
@@ -375,7 +366,6 @@ input {
     overflow: hidden;
   }
   
-  /* Portrait Threshold Boundary Constraints */
   #portTitleWrap, #portArtistWrap {
     width: calc(100vw - 180px); 
     margin: 0 auto;
@@ -385,7 +375,6 @@ input {
   #portTitleWrap { display: block; text-align: center; }
   #portArtistWrap { display: block; text-align: center; }
   
-  /* New Portrait AirPlay Button styling */
   #airplayBtn {
     position: absolute;
     top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
@@ -397,12 +386,10 @@ input {
     justify-content: center;
     z-index: 150;
     pointer-events: auto;
-    transform: none; /* override landscape transform */
+    transform: none; 
   }
 
-  /* Dynamic Title */
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; display: inline-block; }
-  /* Static Artist */
   #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); display: inline-block;}
 
   .port-canvas-container {
@@ -425,7 +412,7 @@ input {
   }
   
   #nowPlayingBar {
-    flex-direction: column; /* Scrubber perfectly above the controls */
+    flex-direction: column; 
   }
   #npScrubberContainer { 
     width: 85%; margin: 0 auto 30px auto; 
@@ -434,7 +421,7 @@ input {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px; /* Space between Controls and Music Library Button */
+    gap: 24px; 
     margin-bottom: 25px;
     padding: 0;
   }
@@ -442,14 +429,13 @@ input {
     position: relative; left: 0; transform: none; gap: 20px;
   }
   #npLibraryWrap {
-    transform: none; /* Reset the landscape pixel push */
+    transform: none; 
     justify-content: center;
     width: 100%;
   }
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   
-  /* FIXED FADE OVERLAY - iPhone 17 Pro Fix */
   #fileViewer::after {
     display: none;
   }
@@ -458,22 +444,21 @@ input {
 /* ===== LANDSCAPE SPECIFIC ORIENTATION CSS ===== */
 @media screen and (orientation: landscape) {
   #fileViewer::after { display: none; }
-  #airplayBtn { display: none !important; } /* Hide AirPlay perfectly in Landscape */
+  #airplayBtn { display: none !important; } 
 }
 
-/* ===== FILE VIEWER & UI STYLING UPDATE (PITCH BLACK + GLASS) ===== */
+/* ===== FILE VIEWER & UI STYLING UPDATE ===== */
 #fileViewer {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 300;
   display: flex; flex-direction: column; background: #000000;
   transform: translateY(100%); transition: transform 0.38s cubic-bezier(.32,.72,0,1);
   border-radius: 12px 12px 0 0; padding-left: max(env(safe-area-inset-left), 12px);
   padding-right: max(env(safe-area-inset-right), 12px);
-  overflow-x: hidden; /* Locks horizontal scroll */
+  overflow-x: hidden; 
 }
 #fileViewer.open { transform: translateY(0); }
-#fvHandle { display: none; } /* Removed to fix grey line */
+#fvHandle { display: none; } 
 
-/* Sleek Header & Segment Controls: Perfect centering logic */
 #fvHeader, #fvDetailHeader { 
   display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
 }
@@ -482,20 +467,17 @@ input {
 .fv-seg { padding: 8px 12px; font-size: 14px; font-weight: 400; color: #888; border-radius: 0; text-align: center; background: transparent; transition: color 0.15s ease; border: none; }
 .fv-seg.active { font-weight: 700; background: transparent; color: #fff; border: none; }
 
-/* Glassy Exit Button: perfectly centered vertically and horizontally */
 .glass-close-btn { 
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   width: 32px; height: 32px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; border: none; z-index: 200;
 }
 
-/* Updated Portrait safe area for file viewer header */
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
   #fvHeader { min-height: 64px; }
   .glass-close-btn { right: 4px; }
 }
 
-/* Import/New Buttons Bar - Shifted 6px up */
 #fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; transform: translateY(-6px); }
 .fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #ffffff; font-size: 14px; font-weight: 600; border: none; color: #000000; }
 
@@ -508,7 +490,6 @@ input {
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
-/* SWIPE TO DELETE LOGIC & LIBRARY ITEMS */
 .fv-list-item-wrap { 
   position: relative; overflow: hidden; border-bottom: 0.5px solid #222; 
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; background: #000;
@@ -527,7 +508,6 @@ input {
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fv-item-duration { font-size: 13px; color: #888; margin-left: 10px; flex-shrink: 0;}
 
-/* Animated Visualizer CSS - Smooth Slide & Scale */
 .fv-visualizer { 
   display: flex; align-items: flex-end; gap: 2px; height: 14px; 
   width: 0px; opacity: 0; margin-right: 0px; overflow: hidden; flex-shrink: 0;
@@ -543,7 +523,6 @@ input {
 .fv-visualizer.playing .fv-vis-bar:nth-child(1) { animation-delay: 0s; }
 .fv-visualizer.playing .fv-vis-bar:nth-child(2) { animation-delay: 0.2s; }
 .fv-visualizer.playing .fv-vis-bar:nth-child(3) { animation-delay: 0.4s; }
-
 .fv-visualizer.paused .fv-vis-bar { animation: none; transform: scaleY(0.25); }
 
 @keyframes fv-bounce { 
@@ -551,7 +530,7 @@ input {
   100% { transform: scaleY(1); } 
 }
 
-/* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
+/* ===== DETAIL VIEW ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
 
@@ -676,32 +655,57 @@ input {
 .fv-pick-file-row span:first-child { font-size: 14px; color: #888; }
 .fv-pick-file-row span:last-child { font-size: 13px; color: #fff; font-weight: 600; }
 
-/* ===== FLIP MODAL (NEW LOGIC) ===== */
+/* ===== FLIP MODAL (EXPANDING 1:1 LOGIC) ===== */
 #flipModal {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.75); z-index: 99999;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 #flipModal.open { opacity: 1; pointer-events: auto; }
+
+/* Flip card starts Absolute to origin coordinates */
 .flip-card {
-  width: 320px; height: 420px; perspective: 1000px;
+  position: absolute;
+  perspective: 1000px;
+  z-index: 100000;
+  /* Smooth transition for dimensions, position, and orientation */
+  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translate(0, 0); 
 }
+
+/* Final Expanded State (Portrait default) */
+.flip-card.expanded {
+  top: 50% !important;
+  left: 50% !important;
+  width: 320px !important;
+  height: 420px !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* Landscape Adaptive Dimensions */
+@media screen and (orientation: landscape) {
+  .flip-card.expanded {
+    width: 420px !important;
+    height: 320px !important;
+  }
+}
+
 .flip-card-inner {
   position: relative; width: 100%; height: 100%; text-align: center;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
   transform-style: preserve-3d;
 }
 .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+
 .flip-card-front, .flip-card-back {
   position: absolute; width: 100%; height: 100%;
   -webkit-backface-visibility: hidden; backface-visibility: hidden;
-  border-radius: 16px; overflow: hidden; background: #111;
+  border-radius: 12px; overflow: hidden; background: #111;
   box-shadow: 0 15px 40px rgba(0,0,0,0.8);
 }
 .flip-card-front { display: flex; align-items: center; justify-content: center; }
-.flip-card-front canvas { width: 100%; height: 100%; object-fit: cover; }
+.flip-card-front canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
 .flip-card-back {
   transform: rotateY(180deg); background: #0a0a0a; border: 1px solid #222;
   display: flex; flex-direction: column; overflow: hidden;
@@ -906,7 +910,7 @@ let currentlyPlayingId = null;
 let isPlaying = false;
 let BLOBURL_CACHE = {};  
 let currentItemForDetail = null;
-let currentDetailIsEditMode = false; /* Keeps track of current edit state for rotation */
+let currentDetailIsEditMode = false;
 let pendingTrackAlbumId = null;
 let coverChangeTargetId = null;
 let editTargetItem = null;
@@ -972,7 +976,7 @@ function genId() {
 }
 
 /* ================================================================
-   IMAGE DRAWING & 1:1 CROPPING (STEP-DOWN QUALITY FIX)
+   IMAGE DRAWING & 1:1 CROPPING
 ================================================================ */
 function drawPlaceholderCover(size, seed) {
   const c = document.createElement('canvas');
@@ -1082,18 +1086,18 @@ async function getMediaSessionArt(item) {
 }
 
 /* ================================================================
-   LONG PRESS & FLIP MODAL ENGINE (NEW LOGIC)
+   LONG PRESS & FLIP MODAL ENGINE (EXPANDING 1:1 ORIGIN)
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
 
-function startPressItem(e, item) {
+function startPressItem(e, item, sourceEl) {
    isLongPressActive = false;
    if(item._empty) return;
    itemPressTimer = setTimeout(() => {
       isLongPressActive = true;
-      if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback explicitly triggered
-      openFlipModal(item);
+      if (navigator.vibrate) navigator.vibrate(50);
+      openFlipModal(item, sourceEl);
    }, 500);
 }
 
@@ -1101,10 +1105,21 @@ function cancelPressItem() {
    clearTimeout(itemPressTimer);
 }
 
-async function openFlipModal(item) {
+async function openFlipModal(item, sourceEl) {
+   const rect = sourceEl.getBoundingClientRect();
+   const card = document.getElementById('flipCard');
+   
+   // Set initial exact position matching the touched 1:1 cover art
+   card.style.top = rect.top + 'px';
+   card.style.left = rect.left + 'px';
+   card.style.width = rect.width + 'px';
+   card.style.height = rect.height + 'px';
+   card.classList.remove('expanded', 'flipped');
+   
    const front = document.getElementById('flipCardFront');
    front.innerHTML = '';
-   front.appendChild(await getCoverCanvas(item, 320));
+   // Populate the front with a high-res identical canvas
+   front.appendChild(await getCoverCanvas(item, 420)); 
    
    document.getElementById('fcbTitle').textContent = item.title;
    document.getElementById('fcbArtist').textContent = item.artist;
@@ -1117,28 +1132,39 @@ async function openFlipModal(item) {
          const tr = document.createElement('div');
          tr.className = 'fv-track-item'; 
          tr.innerHTML = `<div class="fv-track-number">${index + 1}.</div><div class="fv-track-name">${t.title}</div><div class="fv-item-duration">${t.duration ? formatTime(t.duration) : '—'}</div>`;
-         tr.onclick = (e) => { e.stopPropagation(); playTrack(t.audioId, t.title, item); document.getElementById('flipModal').classList.remove('open'); };
+         tr.onclick = (e) => { e.stopPropagation(); playTrack(t.audioId, t.title, item); closeFlipModal(); };
          tracksContainer.appendChild(tr);
       });
    } else {
       const tr = document.createElement('div');
       tr.className = 'fv-track-item';
       tr.innerHTML = `<div class="fv-track-number">1.</div><div class="fv-track-name">${item.title}</div><div class="fv-item-duration">${item.duration ? formatTime(item.duration) : '—'}</div>`;
-      tr.onclick = (e) => { e.stopPropagation(); playTrack(item.audioId, item.title, item); document.getElementById('flipModal').classList.remove('open'); };
+      tr.onclick = (e) => { e.stopPropagation(); playTrack(item.audioId, item.title, item); closeFlipModal(); };
       tracksContainer.appendChild(tr);
    }
    
+   // Open overlay background
    document.getElementById('flipModal').classList.add('open');
-   document.getElementById('flipCard').classList.remove('flipped');
    
-   setTimeout(() => { document.getElementById('flipCard').classList.add('flipped'); }, 300);
+   // Force reflow and execute the 180 flip + size expansion simultaneously
+   requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+         card.classList.add('expanded', 'flipped');
+      });
+   });
+}
+
+function closeFlipModal() {
+   const card = document.getElementById('flipCard');
+   // Removing the expanded and flipped classes shrinks it back down to the 1:1 origin rect
+   card.classList.remove('expanded', 'flipped'); 
+   setTimeout(() => { 
+      document.getElementById('flipModal').classList.remove('open'); 
+   }, 500); // Matches the CSS 0.5s transition
 }
 
 document.getElementById('flipModal').addEventListener('click', (e) => {
-   if(e.target.id === 'flipModal') {
-      document.getElementById('flipCard').classList.remove('flipped');
-      setTimeout(() => { document.getElementById('flipModal').classList.remove('open'); }, 300);
-   }
+   if(e.target.id === 'flipModal') { closeFlipModal(); }
 });
 
 /* ================================================================
@@ -1185,8 +1211,8 @@ async function buildCoverFlow() {
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
 
-    /* Point 1 Long-Press Inject for Landscape */
-    wrap.addEventListener('touchstart', (e) => startPressItem(e, item), {passive: true});
+    // Pass coverDiv specifically as the origin source for Landscape
+    wrap.addEventListener('touchstart', (e) => startPressItem(e, item, coverDiv), {passive: true});
     wrap.addEventListener('touchend', (e) => { cancelPressItem(); }, {passive: true});
     wrap.addEventListener('touchmove', cancelPressItem, {passive: true});
     
@@ -1285,12 +1311,12 @@ function layoutCoverFlow() {
      if (item === items[Math.min(current, items.length - 1)]) {
          const pcc = document.getElementById('portCanvasContainer');
          if(pcc) { 
-            const newPcc = pcc.cloneNode(false); // Clean clone to remove old event listeners
+            const newPcc = pcc.cloneNode(false); 
             newPcc.appendChild(c);
             pcc.parentNode.replaceChild(newPcc, pcc);
             
-            /* Point 1 Long-Press Inject for Portrait */
-            newPcc.addEventListener('touchstart', (e) => startPressItem(e, item), {passive: true});
+            // Pass newPcc specifically as the origin source for Portrait
+            newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
             newPcc.addEventListener('touchend', (e) => { 
                 cancelPressItem(); 
                 if(isLongPressActive) { e.preventDefault(); e.stopPropagation(); } 
@@ -1734,7 +1760,7 @@ async function renderTab(id, items) {
         e.stopPropagation(); 
         currentItemForDetail = i; 
         r.classList.remove('swiped-right'); 
-        renderDetailView(true); // Always push perfectly to full Edit screen
+        renderDetailView(true);
         document.getElementById('fvDetail').classList.add('open');
     }; 
     wrap.appendChild(editBtn);
@@ -2044,7 +2070,6 @@ document.getElementById('coverInput').onchange = async e => {
   i.modifiedDate = Date.now(); 
   await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); 
   
-  /* Point 3 Live Currently Playing Update */
   let isCurrentlyPlayingAlbum = false;
   if (i.type === 'song' && i.audioId === currentlyPlayingId) isCurrentlyPlayingAlbum = true;
   if (i.type === 'album' && i.tracks && i.tracks.some(t => t.audioId === currentlyPlayingId)) isCurrentlyPlayingAlbum = true;
