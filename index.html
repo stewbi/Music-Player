@@ -484,7 +484,7 @@ input {
 /* Glassy Exit Button: perfectly centered vertically and horizontally */
 .glass-close-btn { 
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-  width: 32px; height: 32px; border-radius: 50%; background: #1c1c1e; display: flex; align-items: center; justify-content: center; border: 1px solid #2a2a2a; z-index: 200;
+  width: 32px; height: 32px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; border: none; z-index: 200;
 }
 
 /* Updated Portrait safe area for file viewer header */
@@ -494,9 +494,9 @@ input {
   .glass-close-btn { right: 4px; }
 }
 
-/* Import/New Buttons Bar */
-#fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; }
-.fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #1c1c1e; font-size: 14px; font-weight: 600; border: 1px solid #2a2a2a; color: #fff; }
+/* Import/New Buttons Bar - Shifted 6px up */
+#fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; transform: translateY(-6px); }
+.fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #ffffff; font-size: 14px; font-weight: 600; border: none; color: #000000; }
 
 #fvContent { 
   flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; 
@@ -510,16 +510,31 @@ input {
 /* SWIPE TO DELETE LOGIC & LIBRARY ITEMS */
 .fv-list-item-wrap { 
   position: relative; overflow: hidden; border-bottom: 0.5px solid #222; 
-  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; background: #000;
 }
 .fv-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
+.fv-edit-btn { position: absolute; left: 0; top: 0; bottom: 0; width: 80px; background: #007aff; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
+
 .fv-list-item { display: flex; align-items: center; padding: 14px 20px; gap: 16px; cursor: pointer; background: #000000; position: relative; z-index: 2; transition: transform 0.2s ease-out; }
-.fv-list-item.swiped { transform: translateX(-80px); }
-.fv-item-art { width: 54px; height: 54px; border-radius: 8px; overflow: hidden; background: #1a1a1a; }
+.fv-list-item.swiped-left { transform: translateX(-80px); }
+.fv-list-item.swiped-right { transform: translateX(80px); }
+.fv-item-art { width: 54px; height: 54px; border-radius: 8px; overflow: hidden; background: #1a1a1a; display: flex; align-items: center; justify-content: center; }
 .fv-item-art canvas { width: 54px; height: 54px; display: block; object-fit: cover; }
-.fv-item-info { flex: 1; min-width: 0; }
+.fv-item-info { flex: 1; min-width: 0; display: flex; align-items: center; }
+.fv-item-info-text { flex: 1; min-width: 0; }
 .fv-item-title { font-size: 16px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; }
+.fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-item-duration { font-size: 13px; color: #888; margin-left: 10px; flex-shrink: 0;}
+
+/* Animated Visualizer CSS */
+.fv-visualizer { display: none; align-items: flex-end; gap: 2px; height: 14px; width: 14px; margin-right: 12px; flex-shrink: 0; }
+.fv-visualizer.active { display: flex; }
+.fv-vis-bar { width: 3px; background-color: #888; animation: bounce 0.8s infinite alternate ease-in-out; border-radius: 1px;}
+.fv-vis-bar:nth-child(1) { animation-delay: 0s; height: 60%; }
+.fv-vis-bar:nth-child(2) { animation-delay: 0.2s; height: 100%; }
+.fv-vis-bar:nth-child(3) { animation-delay: 0.4s; height: 80%; }
+.fv-visualizer.paused .fv-vis-bar { animation-play-state: paused; height: 3px; }
+@keyframes bounce { 0% { transform: scaleY(0.3); } 100% { transform: scaleY(1); } }
 
 /* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
@@ -566,7 +581,8 @@ input {
 .fv-info-value { color: #fff; font-weight: 400; }
 
 .fv-tracks-list { width: 100%; max-width: 100%; border-top: 1px solid #222; }
-.fv-track-item { display: flex; align-items: center; padding: 16px 8px; gap: 12px; border-radius: 0; border-bottom: 1px solid #222; cursor: pointer; }
+.fv-track-item { display: flex; align-items: center; padding: 16px 8px; gap: 12px; border-radius: 0; border-bottom: 1px solid #222; cursor: pointer; transition: background 0.1s; }
+.fv-track-item.dragging { opacity: 0.5; background: #111; }
 .fv-track-number { font-size: 16px; font-weight: 600; color: #fff; width: 28px; text-align: left; flex-shrink: 0; }
 .fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 
@@ -746,7 +762,7 @@ input {
           <button class="fv-seg" data-tab="albums">Albums</button>
         </div>
         <button id="fvCloseBtn" class="glass-close-btn" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11"/></svg>
         </button>
       </div>
       <div id="fvImportBar">
@@ -1151,12 +1167,33 @@ function setCurrent(i) {
 }
 
 /* ================================================================
-   AUDIO PLAYER & DYNAMIC MARQUEE EVALUATION
+   AUDIO PLAYER, DYNAMIC VISUALIZERS & MARQUEE EVALUATION
 ================================================================ */
 const audioEl = document.getElementById('audioPlayer');
 const npScrubber = document.getElementById('npScrubber');
 const npProgressBar = document.getElementById('npProgressBar');
 let isScrubbing = false;
+
+function updateVisualizers() {
+    document.querySelectorAll('.fv-visualizer').forEach(vis => {
+        if (vis.dataset.audioId === currentlyPlayingId) {
+            vis.classList.add('active');
+            if (isPlaying) vis.classList.remove('paused');
+            else vis.classList.add('paused');
+        } else {
+            vis.classList.remove('active');
+        }
+    });
+}
+
+function getAudioDuration(file) {
+    return new Promise(resolve => {
+        const tempAudio = document.createElement('audio');
+        tempAudio.src = URL.createObjectURL(file);
+        tempAudio.onloadedmetadata = () => { resolve(tempAudio.duration); URL.revokeObjectURL(tempAudio.src); };
+        tempAudio.onerror = () => resolve(0);
+    });
+}
 
 function _evaluateMarqueeInternal(ids) {
   ids.forEach(id => {
@@ -1208,8 +1245,8 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
       album: albumItem?.title || '',
       artwork: artworkArray
     });
-    navigator.mediaSession.setActionHandler('play', () => { audioEl.play().catch(()=>{}); isPlaying = true; updatePlayIcon(); });
-    navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); isPlaying = false; updatePlayIcon(); });
+    navigator.mediaSession.setActionHandler('play', () => { audioEl.play().catch(()=>{}); isPlaying = true; updatePlayIcon(); updateVisualizers(); });
+    navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); isPlaying = false; updatePlayIcon(); updateVisualizers();});
     navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
     navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
   }
@@ -1228,7 +1265,7 @@ async function playTrack(trackId, trackTitle, albumItem, autoPlay = true) {
 
   if (autoPlay) { audioEl.play().catch(()=>{}); isPlaying = true; } else { isPlaying = false; }
   updatePlayIcon(); 
-  renderDetailView();
+  updateVisualizers();
 }
 
 function updatePlayIcon() { 
@@ -1273,6 +1310,7 @@ document.getElementById('npPlayBtn').onclick = () => {
   if (!currentlyPlayingId) return; 
   if (isPlaying) { audioEl.pause(); isPlaying = false; } else { audioEl.play().catch(()=>{}); isPlaying = true; } 
   updatePlayIcon(); 
+  updateVisualizers();
 };
 
 function findTrackInLibrary(trackId) {
@@ -1391,7 +1429,7 @@ document.getElementById('npInfoWrap').onclick = () => {
   const { item } = findTrackInLibrary(currentlyPlayingId);
   if (item) {
     currentItemForDetail = item;
-    renderDetailView();
+    renderDetailView(false);
     document.getElementById('fileViewer').classList.add('open');
     document.getElementById('fvDetail').classList.add('open');
   }
@@ -1405,7 +1443,8 @@ async function togglePlayCurrentItem() {
   if (item.type === 'album' && item.tracks && item.tracks.some(t => t.audioId === currentlyPlayingId)) belongs = true; 
   if (belongs) { 
     if (isPlaying) { audioEl.pause(); isPlaying = false; } else { audioEl.play().catch(()=>{}); isPlaying = true; } 
-    updatePlayIcon(); 
+    updatePlayIcon();
+    updateVisualizers();
   } else { 
     const tId = item.type === 'song' ? item.audioId : (item.tracks && item.tracks.length > 0 ? item.tracks[0].audioId : null);
     const tT = item.type === 'song' ? item.title : (item.tracks && item.tracks.length > 0 ? item.tracks[0].title : null); 
@@ -1450,7 +1489,7 @@ async function renderAllTabs() {
 }
 
 function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('.fv-list-item-wrap:not(.dragging)')];
+  const draggableElements = [...container.querySelectorAll('.fv-list-item-wrap:not(.dragging), .fv-track-item:not(.dragging)')];
   return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
@@ -1540,34 +1579,81 @@ async function renderTab(id, items) {
         wrap.style.opacity = '1';
     });
 
+    const editBtn = document.createElement('div'); editBtn.className = 'fv-edit-btn'; editBtn.textContent = 'Edit';
+    editBtn.onclick = (e) => { e.stopPropagation(); currentItemForDetail = i; r.classList.remove('swiped-right'); if(i.type === 'album') { renderDetailView(true); document.getElementById('fvDetail').classList.add('open'); } else { openEditModal(); } }; wrap.appendChild(editBtn);
+
     const delBtn = document.createElement('div'); delBtn.className = 'fv-delete-btn'; delBtn.textContent = 'Delete';
     delBtn.onclick = async (e) => { e.stopPropagation(); await deleteLibraryItem(i.id); }; wrap.appendChild(delBtn);
+    
     const r = document.createElement('div'); r.className = 'fv-list-item'; 
     const artWrap = document.createElement('div'); artWrap.className = 'fv-item-art'; 
     
     const canvas = await getCoverCanvas(i, 54);
     artWrap.appendChild(canvas); r.appendChild(artWrap);
     
-    const inf = document.createElement('div'); inf.className = 'fv-item-info'; inf.innerHTML = `<div class="fv-item-title">${i.title}</div><div class="fv-item-sub">${i.artist}</div>`; r.appendChild(inf);
+    const inf = document.createElement('div'); inf.className = 'fv-item-info'; 
     
-    let startX = 0, currentX = 0, isSwiping = false;
-    r.addEventListener('touchstart', e => { startX = e.touches[0].clientX; currentX = startX; isSwiping = false; }, {passive: true});
+    const visHtml = i.type === 'song' ? `<div class="fv-visualizer" data-audio-id="${i.audioId}"><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div></div>` : '';
+    
+    inf.innerHTML = `${visHtml}<div class="fv-item-info-text"><div class="fv-item-title">${i.title}</div><div class="fv-item-sub">${i.artist}</div></div>`; 
+    
+    let trackDurText = '—';
+    if(i.type === 'song' && i.duration) trackDurText = formatTime(i.duration);
+    const durSpan = document.createElement('div'); durSpan.className = 'fv-item-duration'; durSpan.textContent = trackDurText;
+    
+    r.appendChild(inf);
+    r.appendChild(durSpan);
+    
+    let startX = 0, startY = 0, currentX = 0, isSwiping = false, isHorizontal = false;
+    r.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; currentX = startX; isSwiping = false; isHorizontal = false; }, {passive: true});
     r.addEventListener('touchmove', e => {
-      currentX = e.touches[0].clientX; const diff = startX - currentX;
-      if (Math.abs(diff) > 20) isSwiping = true;
-      if (diff > 20) r.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
-      if (diff < -20 && r.classList.contains('swiped')) r.style.transform = `translateX(-${80 - Math.min(-diff, 80)}px)`;
-    }, {passive: true});
+      currentX = e.touches[0].clientX; 
+      let diffX = startX - currentX;
+      let diffY = startY - e.touches[0].clientY;
+      
+      if (!isSwiping) {
+         if (Math.abs(diffX) > Math.abs(diffY)) { isHorizontal = true; isSwiping = true; }
+         else { isSwiping = true; }
+      }
+      
+      if (isHorizontal) {
+          if (e.cancelable) e.preventDefault(); 
+          if (diffX > 0) { 
+              r.style.transform = `translateX(-${Math.min(diffX, 80)}px)`;
+          } else { 
+              r.style.transform = `translateX(${Math.min(-diffX, 80)}px)`;
+          }
+      }
+    }, {passive: false});
     r.addEventListener('touchend', () => {
-      const diff = startX - currentX;
-      if (diff > 50) { r.style.transform = ''; r.classList.add('swiped'); } 
-      else if (diff < -40) { r.style.transform = ''; r.classList.remove('swiped'); } 
-      else { r.style.transform = ''; if (r.classList.contains('swiped')) r.classList.remove('swiped'); }
+      if(!isHorizontal) return;
+      const diffX = startX - currentX;
+      if (diffX > 50) { r.style.transform = ''; r.classList.remove('swiped-right'); r.classList.add('swiped-left'); } 
+      else if (diffX < -50) { r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.add('swiped-right'); } 
+      else { r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.remove('swiped-right'); }
     });
+    
     r.onclick = () => { 
-      if(isSwiping) return; 
-      if(r.classList.contains('swiped')) { r.style.transform = ''; r.classList.remove('swiped'); return; }
-      currentItemForDetail = i; renderDetailView(); document.getElementById('fvDetail').classList.add('open'); 
+      if(isSwiping && isHorizontal) return; 
+      if(r.classList.contains('swiped-left') || r.classList.contains('swiped-right')) { r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.remove('swiped-right'); return; }
+      
+      if (i.type === 'song') {
+         if (currentlyPlayingId === i.audioId) {
+             if(isPlaying) { audioEl.pause(); isPlaying = false; }
+             else { audioEl.play().catch(()=>{}); isPlaying = true; }
+             updatePlayIcon();
+             updateVisualizers();
+         } else {
+             playTrack(i.audioId, i.title, i);
+         }
+      } else if (i.type === 'album') {
+         currentItemForDetail = i; 
+         renderDetailView(false); 
+         document.getElementById('fvDetail').classList.add('open');
+         if(i.tracks && i.tracks.length > 0 && (!currentlyPlayingId || !i.tracks.some(t => t.audioId === currentlyPlayingId))) {
+             playTrack(i.tracks[0].audioId, i.tracks[0].title, i);
+         }
+      }
     }; 
     wrap.appendChild(r);
     return wrap;
@@ -1578,12 +1664,13 @@ async function renderTab(id, items) {
   tab.innerHTML = '';
   nodes.forEach(n => fragment.appendChild(n));
   tab.appendChild(fragment);
+  updateVisualizers();
 }
 
 const formatBytes = (b) => { if (b === 0) return '0 B'; const k = 1024; const dm = 1; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k)); return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; };
 const formatDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); };
 
-async function renderDetailView() {
+async function renderDetailView(isEditMode = true) {
   const i = currentItemForDetail; 
   if (!i) return; 
   
@@ -1628,13 +1715,15 @@ async function renderDetailView() {
 
     const btnGroup = document.createElement('div');
     btnGroup.className = 'fv-album-buttons fv-btn-group';
-    btnGroup.innerHTML = `
-      <button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="position:relative;top:-1px;"><path d="M8 0a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5a6.5 6.5 0 1 1 6.5-6.5 6.5 6.5 0 0 1-6.5 6.5zM8 3a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm-.75-3.75v1.5h1.5v-1.5h-1.5z" fill="#fff"/></svg>
-        Change Cover
-      </button>
-      <button class="fv-edit-info-btn" onclick="openEditModal()">Edit Info</button>
-    `;
+    if(isEditMode) {
+      btnGroup.innerHTML = `
+        <button class="fv-change-cover-btn" onclick="coverChangeTargetId='${i.id}'; document.getElementById('coverInput').click();">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="position:relative;top:-1px;"><path d="M8 0a8 8 0 1 0 8 8 8 8 0 0 0-8-8zm0 14.5a6.5 6.5 0 1 1 6.5-6.5 6.5 6.5 0 0 1-6.5 6.5zM8 3a5 5 0 0 0-5 5 5 5 0 0 0 5 5 5 5 0 0 0 5-5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm-.75-3.75v1.5h1.5v-1.5h-1.5z" fill="#fff"/></svg>
+          Change Cover
+        </button>
+        <button class="fv-edit-info-btn" onclick="openEditModal()">Edit Info</button>
+      `;
+    }
     layout.appendChild(btnGroup);
 
     const trackSection = document.createElement('div');
@@ -1642,29 +1731,93 @@ async function renderDetailView() {
 
     const tl = document.createElement('div');
     tl.className = 'fv-tracks-list';
+    
+    if(isEditMode) {
+       tl.addEventListener('dragover', (e) => {
+         e.preventDefault();
+         const afterElement = getDragAfterElement(tl, e.clientY);
+         const draggable = tl.querySelector('.dragging');
+         if (draggable) {
+           if (afterElement == null) { tl.appendChild(draggable); } 
+           else { tl.insertBefore(draggable, afterElement); }
+         }
+       });
+       tl.addEventListener('drop', async (e) => {
+         e.preventDefault();
+         const newOrderIds = Array.from(tl.querySelectorAll('.fv-track-item')).map(el => el.dataset.trackId);
+         
+         const newTracksArray = [];
+         newOrderIds.forEach(tId => {
+             const trackObj = i.tracks.find(tr => tr.audioId === tId);
+             if(trackObj) newTracksArray.push(trackObj);
+         });
+         
+         i.tracks = newTracksArray;
+         i.modifiedDate = Date.now();
+         await dbPut('albums', i.id, JSON.parse(JSON.stringify(i)));
+         
+         Array.from(tl.querySelectorAll('.fv-track-number')).forEach((el, index) => {
+             el.textContent = (index + 1) + '.';
+         });
+       });
+    }
+
     i.tracks.forEach((t, index) => {
       const tr = document.createElement('div');
       tr.className = 'fv-track-item';
-      tr.innerHTML = `<div class="fv-track-number">${index + 1}.</div><div class="fv-track-name">${t.title}</div>`;
-      tr.onclick = () => playTrack(t.audioId, t.title, i);
+      tr.dataset.trackId = t.audioId;
+      
+      if(isEditMode) {
+          tr.draggable = true;
+          tr.addEventListener('dragstart', (e) => {
+              if (navigator.vibrate) navigator.vibrate(50);
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', t.audioId);
+              tr.classList.add('dragging');
+          });
+          tr.addEventListener('dragend', () => tr.classList.remove('dragging'));
+      }
+
+      let visHtml = '';
+      if(!isEditMode) {
+          visHtml = `<div class="fv-visualizer" data-audio-id="${t.audioId}"><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div></div>`;
+      }
+      
+      tr.innerHTML = `${visHtml}<div class="fv-track-number">${index + 1}.</div><div class="fv-track-name">${t.title}</div><div class="fv-item-duration">${t.duration ? formatTime(t.duration) : '—'}</div>`;
+      
+      tr.onclick = () => {
+         if(!isEditMode) {
+             if(currentlyPlayingId === t.audioId) {
+                 if(isPlaying) { audioEl.pause(); isPlaying = false; }
+                 else { audioEl.play().catch(()=>{}); isPlaying = true; }
+                 updatePlayIcon();
+                 updateVisualizers();
+             } else {
+                 playTrack(t.audioId, t.title, i);
+             }
+         }
+      };
       tl.appendChild(tr);
     });
 
-    const ad = document.createElement('button');
-    ad.className = 'fv-change-cover-btn';
-    ad.style.marginTop = '16px';
-    ad.style.width = '100%';
-    ad.style.maxWidth = 'none';
-    ad.textContent = '+ Add Track';
-    ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); };
-
     trackSection.appendChild(tl);
-    trackSection.appendChild(ad);
-    layout.appendChild(trackSection);
+
+    if(isEditMode) {
+        const ad = document.createElement('button');
+        ad.className = 'fv-change-cover-btn';
+        ad.style.marginTop = '16px';
+        ad.style.width = '100%';
+        ad.style.maxWidth = 'none';
+        ad.textContent = '+ Add Track';
+        ad.onclick = () => { pendingTrackAlbumId = i.id; document.getElementById('addTrackModal').classList.add('open'); };
+        trackSection.appendChild(ad);
+    }
     
+    layout.appendChild(trackSection);
     c.appendChild(layout);
 
     getCoverCanvas(i, 340).then(canvas => coverWrap.appendChild(canvas));
+    updateVisualizers();
   }
 }
 
@@ -1677,7 +1830,8 @@ document.getElementById('editConfirm').onclick = async () => {
   editTargetItem.title = document.getElementById('editTitleInput').value; editTargetItem.artist = document.getElementById('editArtistInput').value; 
   editTargetItem.modifiedDate = Date.now(); 
   await dbPut('albums', editTargetItem.id, JSON.parse(JSON.stringify(editTargetItem))); 
-  document.getElementById('editModal').classList.remove('open'); renderAllTabs(); renderDetailView(); buildCoverFlow(); 
+  document.getElementById('editModal').classList.remove('open'); renderAllTabs(); 
+  if(editTargetItem.type === 'album') renderDetailView(true); buildCoverFlow(); 
 };
 
 document.getElementById('editCancel').onclick = () => document.getElementById('editModal').classList.remove('open');
@@ -1685,8 +1839,9 @@ document.getElementById('importSongBtn').onclick = () => document.getElementById
 
 document.getElementById('audioInput').onchange = async e => { 
   const f = e.target.files[0]; if (!f) return; 
+  const dur = await getAudioDuration(f);
   const id = genId(), bId = genId(); await dbPut('blobs', bId, f); 
-  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: 0, size: f.size }; 
+  const i = { id, type: 'song', title: f.name.replace(/\.[^.]+$/, ''), artist: 'Unknown Artist', coverId: null, audioId: bId, uploadDate: Date.now(), modifiedDate: Date.now(), _slot: 0, size: f.size, duration: dur }; 
   library.unshift(i); 
   await Promise.all(library.map((item, index) => {
       item._slot = index;
@@ -1713,10 +1868,11 @@ document.getElementById('trackAudioInput').onchange = e => { const f = e.target.
 
 document.getElementById('addTrackConfirm').onclick = async () => { 
   const t = document.getElementById('trackTitleInput').value; const f = document.getElementById('trackAudioInput').files[0]; if (!t || !f) return; 
+  const dur = await getAudioDuration(f);
   const bId = genId(); await dbPut('blobs', bId, f); const alb = library.find(x => x.id === pendingTrackAlbumId); 
-  alb.tracks.push({id: genId(), title: t, audioId: bId}); 
+  alb.tracks.push({id: genId(), title: t, audioId: bId, duration: dur}); 
   alb.modifiedDate = Date.now(); 
-  await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); document.getElementById('addTrackModal').classList.remove('open'); renderDetailView(); document.getElementById('trackAudioInput').value = '';
+  await dbPut('albums', alb.id, JSON.parse(JSON.stringify(alb))); document.getElementById('addTrackModal').classList.remove('open'); renderDetailView(true); document.getElementById('trackAudioInput').value = '';
 };
 
 document.getElementById('addTrackCancel').onclick = () => document.getElementById('addTrackModal').classList.remove('open');
@@ -1725,7 +1881,7 @@ document.getElementById('coverInput').onchange = async e => {
   const f = e.target.files[0]; if (!f || !coverChangeTargetId) return; 
   const bId = genId(); await dbPut('blobs', bId, f); const i = library.find(x => x.id === coverChangeTargetId); i.coverId = bId; 
   i.modifiedDate = Date.now(); 
-  await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(); e.target.value = '';
+  await dbPut('albums', i.id, JSON.parse(JSON.stringify(i))); await buildCoverFlow(); renderAllTabs(); renderDetailView(true); e.target.value = '';
 };
 
 function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
