@@ -557,7 +557,7 @@ input {
 }
 
 /* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
-#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
+#fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
 
 @media screen and (orientation: portrait) {
@@ -568,7 +568,7 @@ input {
 }
 
 #fvBackBtn { 
-  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: transparent; font-size: 16px; color: #fff; border: none; font-weight: 500; cursor: pointer; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: transparent; font-size: 16px; color: #fff; border: none; font-weight: 700; cursor: pointer; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
   position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
 }
 #fvDetailTitleBar { display: none !important; }
@@ -648,7 +648,7 @@ input {
   .fv-detail-hero { flex-direction: column; align-items: center; text-align: center; margin-bottom: 0;}
   .fv-detail-info-col { text-align: center;}
   .fv-btn-group { justify-content: center; flex-direction: row; }
-  #fvBackBtn { font-size: 16px; font-weight: 500; min-height: 44px; padding: 0 20px; }
+  #fvBackBtn { font-size: 16px; font-weight: 700; min-height: 44px; padding: 0 20px; }
 
   .fv-song-layout {
       display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 40px; width: 100%; height: 100%;
@@ -961,6 +961,7 @@ let isShuffle = false;
 let isRepeat = false;
 const MEDIA_ART_CACHE = {}; 
 let currentFlipItemId = null; 
+let swipeTimeout = null; // Global timeout variable for swiping
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -1706,6 +1707,26 @@ async function togglePlayCurrentItem() {
 /* ================================================================
    FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
+
+function resetAllSwipes(exceptRow = null) {
+  document.querySelectorAll('.fv-list-item').forEach(r => {
+    if (r === exceptRow) return;
+    r.style.transform = '';
+    r.classList.remove('swiped-left', 'swiped-right');
+    const wrap = r.parentElement;
+    if (wrap) {
+      const delBtn = wrap.querySelector('.fv-delete-btn');
+      const editBtn = wrap.querySelector('.fv-edit-btn');
+      if (delBtn) delBtn.style.opacity = '0';
+      if (editBtn) editBtn.style.opacity = '0';
+    }
+  });
+}
+
+document.getElementById('fvContent').addEventListener('scroll', () => {
+    resetAllSwipes();
+});
+
 document.getElementById('fileViewerBtn').onclick = () => { if(isFlipCardOpen) return; document.getElementById('fileViewer').classList.add('open'); };
 if(document.getElementById('portLibraryBtn')) {
   document.getElementById('portLibraryBtn').onclick = () => { if(isFlipCardOpen) return; document.getElementById('fileViewer').classList.add('open'); };
@@ -1833,15 +1854,20 @@ async function renderTab(id, items) {
     const editBtn = document.createElement('div'); editBtn.className = 'fv-edit-btn'; editBtn.textContent = 'Edit';
     editBtn.onclick = (e) => { 
         e.stopPropagation(); 
+        resetAllSwipes();
         currentItemForDetail = i; 
-        r.classList.remove('swiped-right'); 
         renderDetailView(true);
         document.getElementById('fvDetail').classList.add('open');
     }; 
     wrap.appendChild(editBtn);
 
     const delBtn = document.createElement('div'); delBtn.className = 'fv-delete-btn'; delBtn.textContent = 'Delete';
-    delBtn.onclick = async (e) => { e.stopPropagation(); await deleteLibraryItem(i.id); }; wrap.appendChild(delBtn);
+    delBtn.onclick = async (e) => { 
+        e.stopPropagation(); 
+        resetAllSwipes();
+        await deleteLibraryItem(i.id); 
+    }; 
+    wrap.appendChild(delBtn);
     
     const r = document.createElement('div'); r.className = 'fv-list-item'; 
     const artWrap = document.createElement('div'); artWrap.className = 'fv-item-art'; 
@@ -1866,7 +1892,16 @@ async function renderTab(id, items) {
     }
     
     let startX = 0, startY = 0, currentX = 0, isSwiping = false, isHorizontal = false;
-    r.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; currentX = startX; isSwiping = false; isHorizontal = false; }, {passive: true});
+    r.addEventListener('touchstart', e => { 
+        resetAllSwipes(r);
+        clearTimeout(swipeTimeout);
+        startX = e.touches[0].clientX; 
+        startY = e.touches[0].clientY; 
+        currentX = startX; 
+        isSwiping = false; 
+        isHorizontal = false; 
+    }, {passive: true});
+    
     r.addEventListener('touchmove', e => {
       currentX = e.touches[0].clientX; 
       let diffX = startX - currentX;
@@ -1888,12 +1923,21 @@ async function renderTab(id, items) {
           }
       }
     }, {passive: false});
+    
     r.addEventListener('touchend', () => {
       if(!isHorizontal) return;
       const diffX = startX - currentX;
-      if (diffX > 50) { r.style.transform = ''; r.classList.remove('swiped-right'); r.classList.add('swiped-left'); delBtn.style.opacity = '1'; editBtn.style.opacity = '0'; } 
-      else if (diffX < -50) { r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.add('swiped-right'); editBtn.style.opacity = '1'; delBtn.style.opacity = '0'; } 
-      else { r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.remove('swiped-right'); delBtn.style.opacity = '0'; editBtn.style.opacity = '0'; }
+      if (diffX > 50) { 
+          r.style.transform = ''; r.classList.remove('swiped-right'); r.classList.add('swiped-left'); delBtn.style.opacity = '1'; editBtn.style.opacity = '0'; 
+          swipeTimeout = setTimeout(() => resetAllSwipes(), 3000);
+      } 
+      else if (diffX < -50) { 
+          r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.add('swiped-right'); editBtn.style.opacity = '1'; delBtn.style.opacity = '0'; 
+          swipeTimeout = setTimeout(() => resetAllSwipes(), 3000);
+      } 
+      else { 
+          r.style.transform = ''; r.classList.remove('swiped-left'); r.classList.remove('swiped-right'); delBtn.style.opacity = '0'; editBtn.style.opacity = '0'; 
+      }
     });
     
     r.onclick = () => { 
