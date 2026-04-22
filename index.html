@@ -1107,6 +1107,7 @@ async function getMediaSessionArt(item) {
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
+let isFlipCardOpen = false; // FIX: Strict state locking for CF layout
 
 function startPressItem(e, item, sourceEl) {
    isLongPressActive = false;
@@ -1126,6 +1127,9 @@ function cancelPressItem() {
 }
 
 async function openFlipModal(item, sourceEl) {
+   isFlipCardOpen = true; 
+   layoutCoverFlow(); // Lock layout instantly before opening
+
    const rect = sourceEl.getBoundingClientRect();
    const card = document.getElementById('flipCard');
    
@@ -1182,6 +1186,8 @@ function closeFlipModal() {
    // Match the 0.7s CSS transition timeout before completely hiding 
    setTimeout(() => { 
       document.getElementById('flipModal').classList.remove('active'); 
+      isFlipCardOpen = false;
+      layoutCoverFlow(); // Restore layout state once invisible
    }, 700); 
 }
 
@@ -1240,7 +1246,7 @@ async function buildCoverFlow() {
     wrap.addEventListener('touchmove', cancelPressItem, {passive: true});
     
     wrap.onclick = (e) => {
-       if (cfMoved || isLongPressActive) {
+       if (cfMoved || isLongPressActive || isFlipCardOpen) { // FIX: Block interaction when open
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -1275,6 +1281,14 @@ function layoutCoverFlow() {
     const diff = i - current; 
     const absDiff = Math.abs(diff);
     
+    // FIX 2 (Landscape Sticking covers):
+    // If flip card is OPEN or closing, explicitly hide neighbors in PORTRAIT
+    if (isPortrait && isFlipCardOpen) {
+       node.style.display = 'none';
+       node.style.opacity = '0';
+       return;
+    }
+
     if (absDiff > 6) {
        node.style.display = 'none';
        return;
@@ -1289,13 +1303,13 @@ function layoutCoverFlow() {
       x = cx - sz / 2; 
       rotY = 0; 
       scale = 1; 
-      zIndex = 100; 
+      zIndex = 100; // Center is always top in standard flow
     } else { 
       const spread = Math.min(absDiff, 5); 
       x = cx - sz / 2 + dir * (sz * 0.64 + (spread - 1) * (sz * 0.28)); 
       rotY = -dir * 68; 
       scale = Math.max(0.65, 1 - absDiff * 0.08); 
-      zIndex = 100 - absDiff; 
+      zIndex = 100 - absDiff; // Decreasing stacking
     }
     
     opacity = absDiff > 5 ? 0 : 1;
@@ -1309,12 +1323,50 @@ function layoutCoverFlow() {
     if(cover) { cover.style.width = sz + 'px'; cover.style.height = sz + 'px'; }
     if(reflect) { reflect.style.width = sz + 'px'; reflect.style.height = sz + 'px'; }
 
-    node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${diff === 0 ? 60 : 0}px)`;
+    // FIX 2 (Landscape Sticking covers):
+    // When flip card is open, neighbors must not have translateZ(60px) in Landscape.
+    // Neighbors also get forced behind active (diff 0) in all orientations.
+    let tz = 0;
+    if (!isFlipCardOpen && diff === 0) tz = 60;
+    else if (isFlipCardOpen && diff !== 0) zIndex = 10; // Lower others drastically
+
+    node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${tz}px)`;
     node.style.zIndex = zIndex; 
     if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) { node.style.opacity = opacity; }
   });
   
-  document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
+  // Update Portal view backdrop if Portrait
+  if(isPortrait) {
+     const items = library.length > 0 ? library : [{title: 'Howdy!', artist: 'Add music to Music Library', _empty: true}];
+     const item = items[Math.min(current, items.length - 1)];
+     
+     getCoverCanvas(item, 340).then(c => {
+         if (item === items[Math.min(current, items.length - 1)]) {
+             const pcc = document.getElementById('portCanvasContainer');
+             if(pcc) { 
+                const newPcc = pcc.cloneNode(false); 
+                newPcc.appendChild(c);
+                pcc.parentNode.replaceChild(newPcc, pcc);
+                
+                // Pass newPcc specifically as the origin source for Portrait
+                newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
+                newPcc.addEventListener('touchend', (e) => { 
+                    cancelPressItem(); 
+                    if(isLongPressActive) { e.preventDefault(); e.stopPropagation(); } 
+                    else if(!cfMoved && !item._empty && !isFlipCardOpen) { togglePlayCurrentItem(); }
+                });
+                newPcc.addEventListener('touchmove', cancelPressItem, {passive: true});
+             }
+         }
+     });
+  }
+
+  evaluateLabelText();
+}
+
+// Factorized Label Updater
+function evaluateLabelText() {
+  document.getElementById('cfLabel').style.top = Math.max(10, ( ( (cfStage.offsetHeight || window.innerHeight) - Math.min(Math.floor((cfStage.offsetHeight || window.innerHeight) * 0.52), 310) * 1.5) / 2) - 10 / 2) - 15) + 'px';
   
   const items = library.length > 0 ? library : [{title: 'Howdy!', artist: 'Add music to Music Library', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
@@ -1330,31 +1382,12 @@ function layoutCoverFlow() {
   if (pt) pt.textContent = tText;
   if (pa) pa.textContent = aText;
 
-  getCoverCanvas(item, 340).then(c => {
-     if (item === items[Math.min(current, items.length - 1)]) {
-         const pcc = document.getElementById('portCanvasContainer');
-         if(pcc) { 
-            const newPcc = pcc.cloneNode(false); 
-            newPcc.appendChild(c);
-            pcc.parentNode.replaceChild(newPcc, pcc);
-            
-            // Pass newPcc specifically as the origin source for Portrait
-            newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
-            newPcc.addEventListener('touchend', (e) => { 
-                cancelPressItem(); 
-                if(isLongPressActive) { e.preventDefault(); e.stopPropagation(); } 
-                else if(!cfMoved && !item._empty) { togglePlayCurrentItem(); }
-            });
-            newPcc.addEventListener('touchmove', cancelPressItem, {passive: true});
-         }
-     }
-  });
-  
   evaluateMarqueeCenter();
   evaluateMarqueeNP();
 }
 
 function setCurrent(i) { 
+  if (isFlipCardOpen) return; // FIX: Lock scroll interaction when flip active
   const max = Math.max(0, (library.length > 0 ? library.length : 1) - 1);
   current = Math.max(0, Math.min(max, i)); 
   layoutCoverFlow(); 
@@ -1540,7 +1573,7 @@ function getRandomTrack() {
 }
 
 async function playNextTrack() {
-  if (!currentlyPlayingId) return;
+  if (!currentlyPlayingId || isFlipCardOpen) return; // FIX: Block skip when flip active
   
   if (isShuffle) {
      const nextT = getRandomTrack();
@@ -1571,7 +1604,7 @@ async function playNextTrack() {
 }
 
 async function playPrevTrack() {
-  if (!currentlyPlayingId) return;
+  if (!currentlyPlayingId || isFlipCardOpen) return; // FIX: Block skip when flip active
 
   if (isShuffle) {
      const nextT = getRandomTrack();
@@ -1624,7 +1657,7 @@ if (airplayBtnElement) {
 }
 
 document.getElementById('npInfoWrap').onclick = () => {
-  if (!currentlyPlayingId) return;
+  if (!currentlyPlayingId || isFlipCardOpen) return;
   const { item } = findTrackInLibrary(currentlyPlayingId);
   if (item) {
     currentItemForDetail = item;
@@ -1636,7 +1669,7 @@ document.getElementById('npInfoWrap').onclick = () => {
 
 async function togglePlayCurrentItem() { 
   const item = library[current]; 
-  if (!item || item._empty) return; 
+  if (!item || item._empty || isFlipCardOpen) return; 
   let belongs = false; 
   if (item.type === 'song' && item.audioId === currentlyPlayingId) belongs = true; 
   if (item.type === 'album' && item.tracks && item.tracks.some(t => t.audioId === currentlyPlayingId)) belongs = true; 
@@ -1654,9 +1687,9 @@ async function togglePlayCurrentItem() {
 /* ================================================================
    FILE VIEWER MENU & SWIPE TO DELETE / DRAG TO REORDER
 ================================================================ */
-document.getElementById('fileViewerBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
+document.getElementById('fileViewerBtn').onclick = () => { if(isFlipCardOpen) return; document.getElementById('fileViewer').classList.add('open'); };
 if(document.getElementById('portLibraryBtn')) {
-  document.getElementById('portLibraryBtn').onclick = () => { document.getElementById('fileViewer').classList.add('open'); };
+  document.getElementById('portLibraryBtn').onclick = () => { if(isFlipCardOpen) return; document.getElementById('fileViewer').classList.add('open'); };
 }
 document.getElementById('fvCloseBtn').onclick = () => { document.getElementById('fileViewer').classList.remove('open'); };
 document.getElementById('fvBackBtn').onclick = () => { document.getElementById('fvDetail').classList.remove('open'); currentItemForDetail = null; };
@@ -2124,6 +2157,7 @@ function showToast(m) { const t = document.getElementById('toast'); t.textConten
 
 let touchStartX = 0, touchStartY = 0, cfMoved = false;
 cfStage.addEventListener('touchstart', e => { 
+  if(isFlipCardOpen) return;
   touchStartX = e.touches[0].clientX; 
   touchStartY = e.touches[0].clientY; 
   cfMoved = false;
@@ -2136,6 +2170,7 @@ cfStage.addEventListener('touchmove', e => {
 }, {passive: true});
 
 cfStage.addEventListener('touchend', e => { 
+  if(isFlipCardOpen) return;
   const dx = e.changedTouches[0].clientX - touchStartX; 
   if (Math.abs(dx) > 28) setCurrent(current + (dx < 0 ? 1 : -1)); 
   setTimeout(() => cfMoved = false, 50); 
@@ -2143,18 +2178,19 @@ cfStage.addEventListener('touchend', e => {
 
 let mouseX = 0, mouseY = 0, dragging = false;
 cfStage.addEventListener('mousedown', e => { 
+  if(isFlipCardOpen) return;
   dragging = true; mouseX = e.clientX; mouseY = e.clientY; cfMoved = false; 
 });
 
 window.addEventListener('mousemove', e => {
-  if (!dragging) return;
+  if (!dragging || isFlipCardOpen) return;
   if (Math.abs(e.clientX - mouseX) > 10 || Math.abs(e.clientY - mouseY) > 10) {
     cfMoved = true;
   }
 });
 
 window.addEventListener('mouseup', e => { 
-  if (!dragging) return; dragging = false; 
+  if (!dragging || isFlipCardOpen) return; dragging = false; 
   const dx = e.clientX - mouseX; 
   if (Math.abs(dx) > 18) setCurrent(current + (dx < 0 ? 1 : -1)); 
   setTimeout(() => cfMoved = false, 50);
@@ -2162,7 +2198,7 @@ window.addEventListener('mouseup', e => {
 
 window.addEventListener('resize', () => { 
   clearTimeout(window.resizeTimeout); 
-  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateMarqueeCenter(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(currentDetailIsEditMode); }, 100); 
+  window.resizeTimeout = setTimeout(() => { layoutCoverFlow(); evaluateLabelText(); evaluateMarqueeNP(); if(currentItemForDetail) renderDetailView(currentDetailIsEditMode); }, 100); 
 });
 
 async function init() { 
