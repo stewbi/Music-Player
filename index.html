@@ -138,7 +138,6 @@ input {
   line-height: 0; 
   position: relative;
   z-index: 2;
-  transition: opacity 0.2s ease;
 }
 .cf-cover canvas { display: block; }
 .cf-reflect {
@@ -151,7 +150,6 @@ input {
   z-index: 1; 
   border-radius: 8px; 
   overflow: hidden; 
-  transition: opacity 0.2s ease;
 }
 .cf-reflect-canvas {
   width: 100%; height: 100%; display: block; filter: brightness(0.35);
@@ -413,7 +411,6 @@ input {
     -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
     border-radius: 4px;
     background: #1a1a1a;
-    transition: opacity 0.2s ease;
   }
   .port-canvas-container canvas {
     width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
@@ -730,9 +727,17 @@ input {
   position: absolute; width: 100%; height: 100%;
   -webkit-backface-visibility: hidden; backface-visibility: hidden;
   border-radius: 12px; background: #111;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+  box-shadow: 0 0 0 rgba(0,0,0,0); /* Start with invisible shadow */
   transform-style: preserve-3d;
+  transition: box-shadow 0.3s ease; /* Smoothly fade shadow out when closing */
 }
+
+/* Cast shadow only when fully open to prevent overlaps */
+.flip-card.expanded .flip-card-front, 
+.flip-card.expanded .flip-card-back {
+   box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+}
+
 .flip-card-front { 
   display: flex; align-items: center; justify-content: center; 
   -webkit-transform: rotateY(0deg) translateZ(1px);
@@ -1356,11 +1361,10 @@ function layoutCoverFlow() {
        }
     }
     
-    // Explicitly un-linking reflection opacity from the top cover opacity
     if(reflect) { 
        reflect.style.width = sz + 'px'; 
        reflect.style.height = sz + 'px';
-       reflect.style.opacity = '1'; // Never hide the reflection
+       reflect.style.opacity = '1'; 
     }
 
     let tz = (diff === 0) ? 60 : 0;
