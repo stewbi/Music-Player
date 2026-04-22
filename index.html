@@ -677,7 +677,7 @@ input {
 .fv-pick-file-row span:first-child { font-size: 14px; color: #888; }
 .fv-pick-file-row span:last-child { font-size: 13px; color: #fff; font-weight: 600; }
 
-/* ===== FLIP MODAL (LOCKED TO CENTER LOGIC) ===== */
+/* ===== FLIP MODAL (TRACKLIST UI UPDATE) ===== */
 #flipModal {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999;
   pointer-events: none; visibility: hidden;
@@ -690,18 +690,17 @@ input {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.75);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  opacity: 0; transition: opacity 0.6s ease;
+  opacity: 0; transition: opacity 0.25s ease;
 }
 #flipModalBg.show { opacity: 1; }
 
-/* Flip card is now purely centered, eliminating coordinate tracking */
+/* Tracklist UI Card */
 .flip-card {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 320px;
   height: 420px;
-  perspective: 1200px;
   z-index: 100000;
   
   /* Start state: centered, slightly scaled down, 0 opacity */
@@ -710,7 +709,16 @@ input {
   pointer-events: none;
   
   /* Smoothly transition scale and opacity in-place */
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease;
+
+  /* Structure */
+  border-radius: 12px; 
+  background: #0a0a0a; 
+  border: 1px solid #222;
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.8);
 }
 
 /* Instantly swaps aspect ratio on rotation without relying on JS math */
@@ -726,45 +734,6 @@ input {
   opacity: 1;
   pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
-}
-
-/* The actual 180 flip handles the rotation independently */
-.flip-card-inner {
-  position: relative; width: 100%; height: 100%; text-align: center;
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
-  transform-style: preserve-3d;
-}
-.flip-card.expanded .flip-card-inner { 
-  transform: rotateY(180deg); 
-}
-
-.flip-card-front, .flip-card-back {
-  position: absolute; width: 100%; height: 100%;
-  -webkit-backface-visibility: hidden; backface-visibility: hidden;
-  border-radius: 12px; background: #111;
-  box-shadow: 0 0 0 rgba(0,0,0,0); /* Start with invisible shadow */
-  transform-style: preserve-3d;
-  transition: box-shadow 0.3s ease; 
-}
-
-/* Cast shadow only when fully open to prevent overlaps */
-.flip-card.expanded .flip-card-front, 
-.flip-card.expanded .flip-card-back {
-   box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-}
-
-.flip-card-front { 
-  display: flex; align-items: center; justify-content: center; 
-  -webkit-transform: rotateY(0deg) translateZ(1px);
-  transform: rotateY(0deg) translateZ(1px);
-  z-index: 2;
-}
-.flip-card-front canvas { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 12px; }
-.flip-card-back {
-  -webkit-transform: rotateY(180deg) translateZ(1px);
-  transform: rotateY(180deg) translateZ(1px);
-  background: #0a0a0a; border: 1px solid #222;
-  display: flex; flex-direction: column; overflow: hidden;
 }
 
 .fcb-header { padding: 20px; text-align: center; border-bottom: 1px solid #222; flex-shrink: 0;}
@@ -932,16 +901,11 @@ input {
     <div id="flipModal">
       <div id="flipModalBg"></div>
       <div class="flip-card" id="flipCard">
-        <div class="flip-card-inner" id="flipCardInner">
-          <div class="flip-card-front" id="flipCardFront"></div>
-          <div class="flip-card-back" id="flipCardBack">
-             <div class="fcb-header">
-                <div class="fcb-title" id="fcbTitle"></div>
-                <div class="fcb-artist" id="fcbArtist"></div>
-             </div>
-             <div class="fcb-tracks" id="fcbTracks"></div>
-          </div>
-        </div>
+         <div class="fcb-header">
+            <div class="fcb-title" id="fcbTitle"></div>
+            <div class="fcb-artist" id="fcbArtist"></div>
+         </div>
+         <div class="fcb-tracks" id="fcbTracks"></div>
       </div>
     </div>
     
@@ -1145,13 +1109,13 @@ async function getMediaSessionArt(item) {
 }
 
 /* ================================================================
-   LONG PRESS & FLIP MODAL ENGINE (LOCKED CENTER)
+   LONG PRESS & FLIP MODAL ENGINE (LOCKED CENTER, OPTION A)
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
 let isFlipCardOpen = false; 
 
-function startPressItem(e, item, sourceEl) {
+function startPressItem(e, item) {
    isLongPressActive = false;
    
    if(item._empty || item.type !== 'album') return;
@@ -1159,7 +1123,7 @@ function startPressItem(e, item, sourceEl) {
    itemPressTimer = setTimeout(() => {
       isLongPressActive = true;
       if (navigator.vibrate) navigator.vibrate(50);
-      openFlipModal(item, sourceEl);
+      openFlipModal(item);
    }, 500);
 }
 
@@ -1167,23 +1131,13 @@ function cancelPressItem() {
    clearTimeout(itemPressTimer);
 }
 
-async function openFlipModal(item, sourceEl) {
+async function openFlipModal(item) {
    isFlipCardOpen = true; 
    currentFlipItemId = item.id;
-   layoutCoverFlow(); 
+   layoutCoverFlow(); // Locks interaction with CF, but covers stay 100% visible
 
    const card = document.getElementById('flipCard');
-   
-   // Clear any dynamically assigned inline positioning
-   card.style.top = '';
-   card.style.left = '';
-   card.style.width = '';
-   card.style.height = '';
    card.classList.remove('expanded');
-   
-   const front = document.getElementById('flipCardFront');
-   front.innerHTML = '';
-   front.appendChild(await getCoverCanvas(item, 420)); 
    
    document.getElementById('fcbTitle').textContent = item.title;
    document.getElementById('fcbArtist').textContent = item.artist;
@@ -1195,7 +1149,11 @@ async function openFlipModal(item, sourceEl) {
       item.tracks.forEach((t, index) => {
          const tr = document.createElement('div');
          tr.className = 'fv-track-item'; 
-         tr.innerHTML = `<div class="fv-track-number">${index + 1}.</div><div class="fv-track-name">${t.title}</div><div class="fv-item-duration">${t.duration ? formatTime(t.duration) : '—'}</div>`;
+         
+         // Inject the Visualizer HTML here
+         let visHtml = `<div class="fv-visualizer" data-audio-id="${t.audioId}"><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div></div>`;
+         
+         tr.innerHTML = `<div class="fv-track-number">${index + 1}.</div>${visHtml}<div class="fv-track-name">${t.title}</div><div class="fv-item-duration">${t.duration ? formatTime(t.duration) : '—'}</div>`;
          tr.onclick = (e) => { e.stopPropagation(); playTrack(t.audioId, t.title, item); closeFlipModal(); };
          tracksContainer.appendChild(tr);
       });
@@ -1209,6 +1167,9 @@ async function openFlipModal(item, sourceEl) {
          card.classList.add('expanded');
       });
    });
+   
+   // Start visualizer instantly if currently playing song is in this album
+   updateVisualizers();
 }
 
 function closeFlipModal() {
@@ -1222,8 +1183,7 @@ function closeFlipModal() {
       document.getElementById('flipModal').classList.remove('active'); 
       isFlipCardOpen = false;
       currentFlipItemId = null;
-      layoutCoverFlow(); 
-   }, 600); 
+   }, 300); // Matches the new fast 0.25s CSS transition
 }
 
 document.getElementById('flipModal').addEventListener('click', (e) => {
@@ -1274,7 +1234,7 @@ async function buildCoverFlow() {
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
 
-    wrap.addEventListener('touchstart', (e) => startPressItem(e, item, coverDiv), {passive: true});
+    wrap.addEventListener('touchstart', (e) => startPressItem(e, item), {passive: true});
     wrap.addEventListener('touchend', (e) => { cancelPressItem(); }, {passive: true});
     wrap.addEventListener('touchmove', cancelPressItem, {passive: true});
     
@@ -1349,12 +1309,7 @@ function layoutCoverFlow() {
     if(cover) { 
        cover.style.width = sz + 'px'; 
        cover.style.height = sz + 'px'; 
-       
-       if (isFlipCardOpen && node.dataset.id === currentFlipItemId) {
-           cover.style.opacity = '0';
-       } else {
-           cover.style.opacity = '1';
-       }
+       cover.style.opacity = '1'; // Never hide the origin cover
     }
     
     if(reflect) { 
@@ -1380,16 +1335,11 @@ function layoutCoverFlow() {
              if(pcc) { 
                 const newPcc = pcc.cloneNode(false); 
                 newPcc.appendChild(c);
-                
-                if (isFlipCardOpen && item.id === currentFlipItemId) {
-                    newPcc.style.opacity = '0';
-                } else {
-                    newPcc.style.opacity = '1';
-                }
+                newPcc.style.opacity = '1';
 
                 pcc.parentNode.replaceChild(newPcc, pcc);
                 
-                newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
+                newPcc.addEventListener('touchstart', (e) => startPressItem(e, item), {passive: true});
                 newPcc.addEventListener('touchend', (e) => { 
                     cancelPressItem(); 
                     if(isLongPressActive) { e.preventDefault(); e.stopPropagation(); } 
