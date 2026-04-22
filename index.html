@@ -352,7 +352,7 @@ input {
   }
 
   .cf-stage::after {
-    background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 90%, rgba(0,0,0,0.5) 100%);
+    background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 5%, rgba(0,0,0,0) 95%, rgba(0,0,0,0.5) 100%);
   }
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
@@ -675,13 +675,13 @@ input {
 /* Modal styling */
 .fv-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .fv-modal.open { opacity: 1; pointer-events: auto; }
-.fv-modal-box { background: #000000; border-radius: 24px; padding: 24px; width: 280px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+.fv-modal-box { background: #000000; border-radius: 24px; padding: 24px; width: 280px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
 .fv-modal-box h3 { color: #fff; text-align: center; margin-bottom: 16px; font-size: 17px; }
 .fv-input { width: 100%; background: #111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 12px 14px; font-size: 15px; color: #fff; margin-bottom: 12px; -webkit-appearance: none; }
 .fv-modal-btns { display: flex; gap: 12px; margin-top: 8px; }
-.fv-modal-btns button { flex: 1; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 700; border: 1px solid #2a2a2a; }
+.fv-modal-btns button { flex: 1; padding: 12px; border-radius: 20px; font-size: 15px; font-weight: 700; border: none; }
 .fv-modal-cancel { background: #1c1c1e; color: #fff; }
-.fv-modal-create { background: #fff; color: #000; border-color: #fff; }
+.fv-modal-create { background: #fff; color: #000; }
 .fv-pick-file-row { display: flex; align-items: center; justify-content: space-between; background: #111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
 .fv-pick-file-row span:first-child { font-size: 14px; color: #888; }
 .fv-pick-file-row span:last-child { font-size: 13px; color: #fff; font-weight: 600; }
@@ -1614,12 +1614,21 @@ async function playNextTrack() {
         return;
      }
   }
+  
   const itemIdx = library.findIndex(x => x.id === item.id);
-  if (itemIdx >= 0 && itemIdx + 1 < library.length) {
-     const nextItem = library[itemIdx + 1];
-     setCurrent(itemIdx + 1); 
-     if (nextItem.type === 'song') { await playTrack(nextItem.audioId, nextItem.title, nextItem); } 
-     else if (nextItem.tracks && nextItem.tracks.length > 0) { await playTrack(nextItem.tracks[0].audioId, nextItem.tracks[0].title, nextItem); }
+  if (itemIdx >= 0) {
+     if (itemIdx + 1 < library.length) {
+        const nextItem = library[itemIdx + 1];
+        setCurrent(itemIdx + 1); 
+        if (nextItem.type === 'song') { await playTrack(nextItem.audioId, nextItem.title, nextItem); } 
+        else if (nextItem.tracks && nextItem.tracks.length > 0) { await playTrack(nextItem.tracks[0].audioId, nextItem.tracks[0].title, nextItem); }
+     } else if (library.length > 0) {
+        // Loop back to the beginning of the list
+        const firstItem = library[0];
+        setCurrent(0);
+        if (firstItem.type === 'song') { await playTrack(firstItem.audioId, firstItem.title, firstItem); }
+        else if (firstItem.tracks && firstItem.tracks.length > 0) { await playTrack(firstItem.tracks[0].audioId, firstItem.tracks[0].title, firstItem); }
+     }
   }
 }
 
