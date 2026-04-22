@@ -183,6 +183,7 @@ input {
   gap: 10px; 
 }
 
+/* Text containers are static in Landscape Center */
 #cfTitle { font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 #cfArtist { font-size: 14px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -195,6 +196,7 @@ input {
   88%, 100% { transform: translateX(calc(-100% + var(--mw))); }
 }
 
+/* Dynamic Mask Class activated only when text is scrolling */
 .needs-mask {
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, #000 15px, #000 calc(100% - 15px), transparent 100%);
@@ -222,7 +224,7 @@ input {
   display: none;
 }
 
-/* ===== BOTTOM UI OVERLAY ===== */
+/* ===== BOTTOM UI OVERLAY (Permanently Pinned to Bottom) ===== */
 #bottomUIWrapper {
   position: absolute;
   bottom: 0;
@@ -281,12 +283,13 @@ input {
   font-weight: 500; color: #aaa; pointer-events: none;
 }
 
-/* ===== BOTTOM ROW ===== */
+/* ===== BOTTOM ROW (Left, Center, Right Mirror) ===== */
 #npBarBottom { 
   display: flex; align-items: center; justify-content: space-between; 
   width: 100%; padding: 0 4px; position: relative; pointer-events: auto; 
 }
 
+/* Left: Track Info Thumbnail (LANDSCAPE) */
 #npInfoWrap { 
   display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; 
   max-width: 200px; padding-right: 20px; cursor: pointer; 
@@ -302,6 +305,7 @@ input {
 #npTitle { font-size: 16px; font-weight: 600; color: #fff; }
 #npArtist { font-size: 13px; color: #888; margin-top: 2px; }
 
+/* Center: Playback Controls */
 #npControls {
   position: absolute; left: 50%; transform: translate(-50%, -10px);
   display: flex; align-items: center; gap: 16px; 
@@ -312,6 +316,7 @@ input {
 }
 .np-aux-btn.active { color: #fff; }
 
+/* Adjusted precisely 6px tighter on each side */
 #npShuffleBtn { transform: translateX(-9px); }
 #npRepeatBtn { transform: translateX(9px); }
 
@@ -325,6 +330,7 @@ input {
 #npPlayBtn svg { width: 18px; height: 18px; }
 #npPlayBtn:active { background: rgba(255,255,255,0.2); }
 
+/* Right: Music Library (LANDSCAPE) */
 #npLibraryWrap { 
   display: flex; align-items: center; justify-content: flex-end; flex: 1; 
   transform: translateX(50px); 
@@ -338,6 +344,7 @@ input {
 
 /* ===== PORTRAIT ORIENTATION CSS ===== */
 @media screen and (orientation: portrait) {
+  /* Hide Landscape UI - Keep #npLibraryWrap and #airplayBtn visible */
   #centerUI, #npInfoWrap, #portCoverWrap { 
     display: none !important; 
   }
@@ -348,6 +355,7 @@ input {
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
 
+  /* Display Portrait elements with proper spacing constraints */
   #portView {
     display: flex;
     flex-direction: column;
@@ -366,6 +374,7 @@ input {
     overflow: hidden;
   }
   
+  /* Portrait Threshold Boundary Constraints */
   #portTitleWrap, #portArtistWrap {
     width: calc(100vw - 180px); 
     margin: 0 auto;
@@ -375,6 +384,7 @@ input {
   #portTitleWrap { display: block; text-align: center; }
   #portArtistWrap { display: block; text-align: center; }
   
+  /* New Portrait AirPlay Button styling */
   #airplayBtn {
     position: absolute;
     top: calc(max(env(safe-area-inset-top, 20px), 50px) + 25px);
@@ -386,10 +396,12 @@ input {
     justify-content: center;
     z-index: 150;
     pointer-events: auto;
-    transform: none; 
+    transform: none; /* override landscape transform */
   }
 
+  /* Dynamic Title */
   #portTitle { font-size: 24px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,1); margin-bottom: 6px; display: inline-block; }
+  /* Static Artist */
   #portArtist { font-size: 16px; font-weight: 500; color: #aaa; text-shadow: 0 2px 10px rgba(0,0,0,1); display: inline-block;}
 
   .port-canvas-container {
@@ -412,7 +424,7 @@ input {
   }
   
   #nowPlayingBar {
-    flex-direction: column; 
+    flex-direction: column; /* Scrubber perfectly above the controls */
   }
   #npScrubberContainer { 
     width: 85%; margin: 0 auto 30px auto; 
@@ -421,7 +433,7 @@ input {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px; 
+    gap: 24px; /* Space between Controls and Music Library Button */
     margin-bottom: 25px;
     padding: 0;
   }
@@ -429,13 +441,14 @@ input {
     position: relative; left: 0; transform: none; gap: 20px;
   }
   #npLibraryWrap {
-    transform: none; 
+    transform: none; /* Reset the landscape pixel push */
     justify-content: center;
     width: 100%;
   }
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   
+  /* FIXED FADE OVERLAY - iPhone 17 Pro Fix */
   #fileViewer::after {
     display: none;
   }
@@ -444,21 +457,22 @@ input {
 /* ===== LANDSCAPE SPECIFIC ORIENTATION CSS ===== */
 @media screen and (orientation: landscape) {
   #fileViewer::after { display: none; }
-  #airplayBtn { display: none !important; } 
+  #airplayBtn { display: none !important; } /* Hide AirPlay perfectly in Landscape */
 }
 
-/* ===== FILE VIEWER & UI STYLING UPDATE ===== */
+/* ===== FILE VIEWER & UI STYLING UPDATE (PITCH BLACK + GLASS) ===== */
 #fileViewer {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 300;
   display: flex; flex-direction: column; background: #000000;
   transform: translateY(100%); transition: transform 0.38s cubic-bezier(.32,.72,0,1);
   border-radius: 12px 12px 0 0; padding-left: max(env(safe-area-inset-left), 12px);
   padding-right: max(env(safe-area-inset-right), 12px);
-  overflow-x: hidden; 
+  overflow-x: hidden; /* Locks horizontal scroll */
 }
 #fileViewer.open { transform: translateY(0); }
-#fvHandle { display: none; } 
+#fvHandle { display: none; } /* Removed to fix grey line */
 
+/* Sleek Header & Segment Controls: Perfect centering logic */
 #fvHeader, #fvDetailHeader { 
   display: flex; align-items: center; justify-content: center; position: relative; border-bottom: none; min-height: 64px; 
 }
@@ -467,17 +481,20 @@ input {
 .fv-seg { padding: 8px 12px; font-size: 14px; font-weight: 400; color: #888; border-radius: 0; text-align: center; background: transparent; transition: color 0.15s ease; border: none; }
 .fv-seg.active { font-weight: 700; background: transparent; color: #fff; border: none; }
 
+/* Glassy Exit Button: perfectly centered vertically and horizontally */
 .glass-close-btn { 
   position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
   width: 32px; height: 32px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; border: none; z-index: 200;
 }
 
+/* Updated Portrait safe area for file viewer header */
 @media screen and (orientation: portrait) {
   #fileViewer { padding-top: max(env(safe-area-inset-top, 20px), 30px); }
   #fvHeader { min-height: 64px; }
   .glass-close-btn { right: 4px; }
 }
 
+/* Import/New Buttons Bar - Shifted 6px up */
 #fvImportBar { display: flex; align-items: center; padding: 12px 20px; gap: 12px; border-bottom: none; transform: translateY(-6px); }
 .fv-import-btn, #newAlbumBtn2 { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 20px; background: #ffffff; font-size: 14px; font-weight: 600; border: none; color: #000000; }
 
@@ -490,6 +507,7 @@ input {
 .fv-tab { display: none; }
 .fv-tab.active { display: block; }
 
+/* SWIPE TO DELETE LOGIC & LIBRARY ITEMS */
 .fv-list-item-wrap { 
   position: relative; overflow: hidden; border-bottom: 0.5px solid #222; 
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; background: #000;
@@ -508,6 +526,7 @@ input {
 .fv-item-sub { font-size: 14px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fv-item-duration { font-size: 13px; color: #888; margin-left: 10px; flex-shrink: 0;}
 
+/* Animated Visualizer CSS - Smooth Slide & Scale */
 .fv-visualizer { 
   display: flex; align-items: flex-end; gap: 2px; height: 14px; 
   width: 0px; opacity: 0; margin-right: 0px; overflow: hidden; flex-shrink: 0;
@@ -530,7 +549,7 @@ input {
   100% { transform: scaleY(1); } 
 }
 
-/* ===== DETAIL VIEW ===== */
+/* ===== DETAIL VIEW (SHARED BASE CSS) ===== */
 #fvDetail { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000000; transform: translateX(100%); transition: transform 0.3s cubic-bezier(.32,.72,0,1); display: flex; flex-direction: column; z-index: 310; overflow-x: hidden; }
 #fvDetail.open { transform: translateX(0); }
 
@@ -663,7 +682,7 @@ input {
 #flipModal.active { visibility: visible; }
 #flipModal.open { pointer-events: auto; }
 
-/* Decoupled Backdrop to fix card dimming/opacity bugs */
+/* Decoupled Backdrop */
 #flipModalBg {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.75);
@@ -1101,7 +1120,7 @@ async function getMediaSessionArt(item) {
 }
 
 /* ================================================================
-   LONG PRESS & FLIP MODAL ENGINE (EXPANDING 1:1 ORIGIN)
+   LONG PRESS & FLIP MODAL ENGINE
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
@@ -1125,7 +1144,6 @@ function cancelPressItem() {
 
 async function openFlipModal(item, sourceEl) {
    isFlipCardOpen = true; 
-   layoutCoverFlow(); 
 
    const rect = sourceEl.getBoundingClientRect();
    const card = document.getElementById('flipCard');
@@ -1176,7 +1194,6 @@ function closeFlipModal() {
    setTimeout(() => { 
       document.getElementById('flipModal').classList.remove('active'); 
       isFlipCardOpen = false;
-      layoutCoverFlow(); 
    }, 700); 
 }
 
@@ -1267,12 +1284,6 @@ function layoutCoverFlow() {
   cfNodes.forEach((node, i) => {
     const diff = i - current; 
     const absDiff = Math.abs(diff);
-    
-    if (isPortrait && isFlipCardOpen) {
-       node.style.display = 'none';
-       node.style.opacity = '0';
-       return;
-    }
 
     if (absDiff > 6) {
        node.style.display = 'none';
@@ -1308,9 +1319,7 @@ function layoutCoverFlow() {
     if(cover) { cover.style.width = sz + 'px'; cover.style.height = sz + 'px'; }
     if(reflect) { reflect.style.width = sz + 'px'; reflect.style.height = sz + 'px'; }
 
-    let tz = 0;
-    if (!isFlipCardOpen && diff === 0) tz = 60;
-    else if (isFlipCardOpen && diff !== 0) zIndex = 10; 
+    let tz = (diff === 0) ? 60 : 0;
 
     node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${tz}px)`;
     node.style.zIndex = zIndex; 
@@ -2150,6 +2159,7 @@ cfStage.addEventListener('touchstart', e => {
 }, {passive: true});
 
 cfStage.addEventListener('touchmove', e => {
+  if(isFlipCardOpen) return;
   if (Math.abs(e.touches[0].clientX - touchStartX) > 10 || Math.abs(e.touches[0].clientY - touchStartY) > 10) {
     cfMoved = true;
   }
