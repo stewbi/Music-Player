@@ -413,6 +413,7 @@ input {
     -webkit-box-reflect: below 2px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.65, transparent), to(rgba(255,255,255,0.8)));
     border-radius: 4px;
     background: #1a1a1a;
+    transition: opacity 0.2s ease;
   }
   .port-canvas-container canvas {
     width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 4px;
@@ -1343,17 +1344,23 @@ function layoutCoverFlow() {
     
     const cover = node.querySelector('.cf-cover');
     const reflect = node.querySelector('.cf-reflect');
+    
     if(cover) { 
        cover.style.width = sz + 'px'; 
        cover.style.height = sz + 'px'; 
        
        if (isFlipCardOpen && node.dataset.id === currentFlipItemId) {
            cover.style.opacity = '0';
-           if(reflect) reflect.style.opacity = '0';
        } else {
            cover.style.opacity = '1';
-           if(reflect) reflect.style.opacity = '1';
        }
+    }
+    
+    // Explicitly un-linking reflection opacity from the top cover opacity
+    if(reflect) { 
+       reflect.style.width = sz + 'px'; 
+       reflect.style.height = sz + 'px';
+       reflect.style.opacity = '1'; // Never hide the reflection
     }
 
     let tz = (diff === 0) ? 60 : 0;
@@ -1373,9 +1380,15 @@ function layoutCoverFlow() {
              if(pcc) { 
                 const newPcc = pcc.cloneNode(false); 
                 newPcc.appendChild(c);
+                
+                if (isFlipCardOpen && item.id === currentFlipItemId) {
+                    newPcc.style.opacity = '0';
+                } else {
+                    newPcc.style.opacity = '1';
+                }
+
                 pcc.parentNode.replaceChild(newPcc, pcc);
                 
-                // Event binding safely restored
                 newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
                 newPcc.addEventListener('touchend', (e) => { 
                     cancelPressItem(); 
