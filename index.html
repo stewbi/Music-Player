@@ -138,6 +138,7 @@ input {
   line-height: 0; 
   position: relative;
   z-index: 2;
+  transition: opacity 0.2s ease;
 }
 .cf-cover canvas { display: block; }
 .cf-reflect {
@@ -150,6 +151,7 @@ input {
   z-index: 1; 
   border-radius: 8px; 
   overflow: hidden; 
+  transition: opacity 0.2s ease;
 }
 .cf-reflect-canvas {
   width: 100%; height: 100%; display: block; filter: brightness(0.35);
@@ -697,6 +699,7 @@ input {
   perspective: 1200px;
   z-index: 100000;
   transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+  transform-origin: center center;
   transform: translate(0, 0); 
 }
 
@@ -952,6 +955,7 @@ let editTargetTrackId = null;
 let isShuffle = false;
 let isRepeat = false;
 const MEDIA_ART_CACHE = {}; 
+let currentFlipItemId = null; 
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -1143,9 +1147,13 @@ function cancelPressItem() {
 }
 
 async function openFlipModal(item, sourceEl) {
-   isFlipCardOpen = true; 
-
+   // Target rect BEFORE layout hiding
    const rect = sourceEl.getBoundingClientRect();
+
+   isFlipCardOpen = true; 
+   currentFlipItemId = item.id;
+   layoutCoverFlow(); 
+
    const card = document.getElementById('flipCard');
    
    card.style.top = rect.top + 'px';
@@ -1187,6 +1195,23 @@ async function openFlipModal(item, sourceEl) {
 function closeFlipModal() {
    const card = document.getElementById('flipCard');
    
+   let targetRect = null;
+   
+   if (currentFlipItemId) {
+       const activeAlbum = document.querySelector(`.cf-album[data-id="${currentFlipItemId}"]`);
+       if (activeAlbum) {
+           const activeCover = activeAlbum.querySelector('.cf-cover');
+           if (activeCover) targetRect = activeCover.getBoundingClientRect();
+       }
+   }
+
+   if (targetRect && targetRect.width > 0 && targetRect.height > 0) {
+       card.style.top = targetRect.top + 'px';
+       card.style.left = targetRect.left + 'px';
+       card.style.width = targetRect.width + 'px';
+       card.style.height = targetRect.height + 'px';
+   }
+   
    card.classList.remove('expanded', 'flipped'); 
    document.getElementById('flipModalBg').classList.remove('show');
    document.getElementById('flipModal').classList.remove('open');
@@ -1194,6 +1219,8 @@ function closeFlipModal() {
    setTimeout(() => { 
       document.getElementById('flipModal').classList.remove('active'); 
       isFlipCardOpen = false;
+      currentFlipItemId = null;
+      layoutCoverFlow(); 
    }, 700); 
 }
 
@@ -1316,8 +1343,18 @@ function layoutCoverFlow() {
     
     const cover = node.querySelector('.cf-cover');
     const reflect = node.querySelector('.cf-reflect');
-    if(cover) { cover.style.width = sz + 'px'; cover.style.height = sz + 'px'; }
-    if(reflect) { reflect.style.width = sz + 'px'; reflect.style.height = sz + 'px'; }
+    if(cover) { 
+       cover.style.width = sz + 'px'; 
+       cover.style.height = sz + 'px'; 
+       
+       if (isFlipCardOpen && node.dataset.id === currentFlipItemId) {
+           cover.style.opacity = '0';
+           if(reflect) reflect.style.opacity = '0';
+       } else {
+           cover.style.opacity = '1';
+           if(reflect) reflect.style.opacity = '1';
+       }
+    }
 
     let tz = (diff === 0) ? 60 : 0;
 
@@ -1338,6 +1375,7 @@ function layoutCoverFlow() {
                 newPcc.appendChild(c);
                 pcc.parentNode.replaceChild(newPcc, pcc);
                 
+                // Event binding safely restored
                 newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
                 newPcc.addEventListener('touchend', (e) => { 
                     cancelPressItem(); 
