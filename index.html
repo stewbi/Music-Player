@@ -339,7 +339,7 @@ input {
 }
 #fileViewerBtn {
   padding: 8px 16px; border-radius: 12px; background: transparent; color: #fff; font-size: 14px;
-  font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
   text-shadow: 0 2px 6px rgba(0,0,0,0.9); border: none; transition: transform 0.1s, opacity 0.1s;
 }
 #fileViewerBtn:active { transform: scale(0.96); opacity: 0.7; }
@@ -352,7 +352,7 @@ input {
   }
 
   .cf-stage::after {
-    background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 90%, rgba(0,0,0,1) 100%);
+    background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 90%, rgba(0,0,0,0.5) 100%);
   }
 
   #phoneWrapper { height: 100vh; width: 100vw; border-radius: 0; aspect-ratio: unset; }
@@ -448,6 +448,15 @@ input {
     justify-content: center;
     width: 100%;
   }
+  
+  /* Music Library Portrait override */
+  #fileViewerBtn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 16px;
+  }
+
   #npPlayBtn { width: 64px; height: 64px; }
   #npPrevBtn svg, #npNextBtn svg { width: 24px; height: 24px; }
   
@@ -516,7 +525,7 @@ input {
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; background: #000;
 }
 .fv-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #ff3b30; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
-.fv-edit-btn { position: absolute; left: 0; top: 0; bottom: 0; width: 80px; background: #007aff; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
+.fv-edit-btn { position: absolute; left: 0; top: 0; bottom: 0; width: 80px; background: #47A9FF; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; z-index: 1; cursor: pointer; }
 
 .fv-list-item { display: flex; align-items: center; padding: 14px 20px; gap: 16px; cursor: pointer; background: #000000; position: relative; z-index: 2; transition: transform 0.2s ease-out; }
 .fv-list-item.swiped-left { transform: translateX(-80px); }
@@ -536,6 +545,7 @@ input {
   transition: width 0.4s cubic-bezier(0.3, 0, 0.2, 1), opacity 0.4s ease, margin 0.4s ease; 
 }
 .fv-visualizer.active { width: 13px; opacity: 1; margin-right: 12px; }
+.fv-visualizer.active .fv-vis-bar { background-color: #47A9FF; }
 .fv-vis-bar { 
   width: 3px; background-color: #888; border-radius: 1px; 
   height: 100%; transform-origin: bottom; transform: scaleY(0.25);
@@ -599,8 +609,13 @@ input {
 .fv-tracks-list { width: 100%; max-width: 100%; border-top: 1px solid #222; }
 .fv-track-item { display: flex; align-items: center; padding: 16px 8px; gap: 12px; border-radius: 0; border-bottom: 1px solid #222; cursor: pointer; transition: background 0.1s; }
 .fv-track-item.dragging { opacity: 0.5; background: #111; }
-.fv-track-number { font-size: 16px; font-weight: 600; color: #fff; width: 28px; text-align: left; flex-shrink: 0; }
-.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+
+/* Active Track Text Style */
+.fv-track-item.playing .fv-track-name,
+.fv-track-item.playing .fv-track-number { color: #47A9FF; font-weight: 600; }
+
+.fv-track-number { font-size: 16px; font-weight: 600; color: #fff; width: 28px; text-align: left; flex-shrink: 0; transition: color 0.2s ease;}
+.fv-track-name { flex: 1; font-size: 16px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; transition: color 0.2s ease;}
 
 .fv-album-layout {
   display: flex; flex-direction: column; align-items: center; width: 100%; padding-top: max(20px, 30px);
@@ -652,7 +667,7 @@ input {
   .fv-song-layout .fv-btn-group { display: flex; flex-direction: row; justify-content: flex-start; gap: 12px; width: 100%; margin-bottom: 24px; }
 
   .fv-album-layout {
-      display: grid; grid-template-columns: 220px 1fr; grid-template-rows: auto auto 1fr; column-gap: 32px; row-gap: 12px; width: 100%; height: 100%;
+      display: grid; grid-template-columns: 220px minmax(300px, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; row-gap: 12px; width: 100%; height: 100%; max-width: 1000px;
       padding: 0 max(env(safe-area-inset-right, 0px), 20px) 70px max(env(safe-area-inset-left, 0px), 20px); align-items: start;
   }
   .fv-album-cover { width: 220px; height: 220px; grid-column: 1; grid-row: 1 / span 2; margin-bottom: 0; }
@@ -660,7 +675,7 @@ input {
   .fv-album-info { grid-column: 2; grid-row: 1; align-items: flex-start; text-align: left; padding-bottom: 4px; }
   .fv-album-info .fv-detail-name { font-size: 26px; text-align: left; margin-bottom: 4px; white-space: normal; word-wrap: break-word; line-height: 1.25; width: 100%; }
   .fv-album-info .fv-detail-artist { font-size: 18px; text-align: left; margin-bottom: 0; white-space: normal; word-wrap: break-word; line-height: 1.25; width: 100%; }
-  .fv-album-tracks { grid-column: 2; grid-row: 2 / span 2; width: 100%; display: block; margin-top: 0; }
+  .fv-album-tracks { grid-column: 2; grid-row: 2 / span 2; width: 100%; display: block; margin-top: 0; max-width: none; }
 }
 
 /* Modal styling */
@@ -808,13 +823,24 @@ input {
           
           <div id="npControls">
             <button id="npShuffleBtn" class="np-aux-btn">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 3 21 3 21 8"></polyline>
+                <line x1="4" y1="20" x2="21" y2="3"></line>
+                <polyline points="21 16 21 21 16 21"></polyline>
+                <line x1="15" y1="15" x2="21" y2="21"></line>
+                <line x1="4" y1="4" x2="9" y2="9"></line>
+              </svg>
             </button>
             <button id="npPrevBtn"><svg width="16" height="16" viewBox="0 0 14 14"><rect x="1" y="2" width="2" height="10" rx="1" fill="#aaa"/><polygon points="3,7 13,2 13,12" fill="#aaa"/></svg></button>
             <button id="npPlayBtn"><svg id="npPlayIcon" width="14" height="14" viewBox="0 0 12 12"><polygon points="3,1 11,6 3,11" fill="#fff"/></svg></button>
             <button id="npNextBtn"><svg width="16" height="16" viewBox="0 0 14 14"><polygon points="1,2 11,7 1,12" fill="#aaa"/><rect x="11" y="2" width="2" height="10" rx="1" fill="#aaa"/></svg></button>
             <button id="npRepeatBtn" class="np-aux-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
             </button>
           </div>
           
@@ -1109,7 +1135,7 @@ async function getMediaSessionArt(item) {
 }
 
 /* ================================================================
-   LONG PRESS & FLIP MODAL ENGINE (LOCKED CENTER, OPTION A)
+   LONG PRESS & FLIP MODAL ENGINE
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
@@ -1399,8 +1425,10 @@ let isScrubbing = false;
 
 function updateVisualizers() {
     document.querySelectorAll('.fv-visualizer').forEach(vis => {
+        const trackItem = vis.closest('.fv-track-item');
         if (vis.dataset.audioId === currentlyPlayingId) {
             vis.classList.add('active');
+            if (trackItem) trackItem.classList.add('playing');
             if (isPlaying) { 
                vis.classList.remove('paused'); 
                vis.classList.add('playing'); 
@@ -1410,6 +1438,7 @@ function updateVisualizers() {
             }
         } else {
             vis.classList.remove('active', 'playing', 'paused');
+            if (trackItem) trackItem.classList.remove('playing');
         }
     });
 }
@@ -2022,7 +2051,7 @@ async function renderDetailView(isEditMode = true) {
           visHtml = `<div class="fv-visualizer" data-audio-id="${t.audioId}"><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div><div class="fv-vis-bar"></div></div>`;
       }
       
-      tr.innerHTML = `${visHtml}<div class="fv-track-number">${index + 1}.</div><div class="fv-track-name">${t.title}</div><div class="fv-item-duration">${t.duration ? formatTime(t.duration) : '—'}</div>`;
+      tr.innerHTML = '<div class="fv-track-number">' + (index + 1) + '.</div>' + visHtml + '<div class="fv-track-name">' + t.title + '</div><div class="fv-item-duration">' + (t.duration ? formatTime(t.duration) : '—') + '</div>';
       
       tr.onclick = () => {
          if(!isEditMode) {
