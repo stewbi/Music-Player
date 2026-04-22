@@ -677,7 +677,6 @@ input {
   position: absolute;
   perspective: 1200px;
   z-index: 100000;
-  /* Smoother, stretched bezier curve for explicit visual tracking */
   transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1);
   transform: translate(0, 0); 
 }
@@ -713,7 +712,6 @@ input {
 }
 .flip-card-front { 
   display: flex; align-items: center; justify-content: center; 
-  /* translateZ(1px) hardware forces Safari to maintain proper z-indexing during flips */
   -webkit-transform: rotateY(0deg) translateZ(1px);
   transform: rotateY(0deg) translateZ(1px);
   z-index: 2;
@@ -1107,12 +1105,11 @@ async function getMediaSessionArt(item) {
 ================================================================ */
 let itemPressTimer = null;
 let isLongPressActive = false;
-let isFlipCardOpen = false; // FIX: Strict state locking for CF layout
+let isFlipCardOpen = false; 
 
 function startPressItem(e, item, sourceEl) {
    isLongPressActive = false;
    
-   // FIX 3: Disable Flip Modal explicitly for single songs and empty slots
    if(item._empty || item.type !== 'album') return;
    
    itemPressTimer = setTimeout(() => {
@@ -1128,12 +1125,11 @@ function cancelPressItem() {
 
 async function openFlipModal(item, sourceEl) {
    isFlipCardOpen = true; 
-   layoutCoverFlow(); // Lock layout instantly before opening
+   layoutCoverFlow(); 
 
    const rect = sourceEl.getBoundingClientRect();
    const card = document.getElementById('flipCard');
    
-   // Set initial exact position matching the touched 1:1 cover art
    card.style.top = rect.top + 'px';
    card.style.left = rect.left + 'px';
    card.style.width = rect.width + 'px';
@@ -1142,7 +1138,6 @@ async function openFlipModal(item, sourceEl) {
    
    const front = document.getElementById('flipCardFront');
    front.innerHTML = '';
-   // Populate the front with a high-res identical canvas
    front.appendChild(await getCoverCanvas(item, 420)); 
    
    document.getElementById('fcbTitle').textContent = item.title;
@@ -1161,11 +1156,9 @@ async function openFlipModal(item, sourceEl) {
       });
    }
    
-   // Open overlay layers (Visibility, then Opacity)
    document.getElementById('flipModal').classList.add('active', 'open');
    document.getElementById('flipModalBg').classList.add('show');
    
-   // Force reflow and execute the 180 flip + size expansion
    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
          card.classList.add('expanded', 'flipped');
@@ -1176,22 +1169,17 @@ async function openFlipModal(item, sourceEl) {
 function closeFlipModal() {
    const card = document.getElementById('flipCard');
    
-   // Shrink and flip back down to original coords
    card.classList.remove('expanded', 'flipped'); 
-   // Start background fade out
    document.getElementById('flipModalBg').classList.remove('show');
-   // Block any accidental secondary touches instantly
    document.getElementById('flipModal').classList.remove('open');
    
-   // Match the 0.7s CSS transition timeout before completely hiding 
    setTimeout(() => { 
       document.getElementById('flipModal').classList.remove('active'); 
       isFlipCardOpen = false;
-      layoutCoverFlow(); // Restore layout state once invisible
+      layoutCoverFlow(); 
    }, 700); 
 }
 
-// Ensure clicking the background (or any non-card area) dismisses the flip smoothly
 document.getElementById('flipModal').addEventListener('click', (e) => {
    if(e.target.id === 'flipModal' || e.target.id === 'flipModalBg') { closeFlipModal(); }
 });
@@ -1240,13 +1228,12 @@ async function buildCoverFlow() {
     wrap.appendChild(coverDiv); 
     wrap.appendChild(ref);
 
-    // Pass coverDiv specifically as the origin source for Landscape
     wrap.addEventListener('touchstart', (e) => startPressItem(e, item, coverDiv), {passive: true});
     wrap.addEventListener('touchend', (e) => { cancelPressItem(); }, {passive: true});
     wrap.addEventListener('touchmove', cancelPressItem, {passive: true});
     
     wrap.onclick = (e) => {
-       if (cfMoved || isLongPressActive || isFlipCardOpen) { // FIX: Block interaction when open
+       if (cfMoved || isLongPressActive || isFlipCardOpen) { 
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -1281,8 +1268,6 @@ function layoutCoverFlow() {
     const diff = i - current; 
     const absDiff = Math.abs(diff);
     
-    // FIX 2 (Landscape Sticking covers):
-    // If flip card is OPEN or closing, explicitly hide neighbors in PORTRAIT
     if (isPortrait && isFlipCardOpen) {
        node.style.display = 'none';
        node.style.opacity = '0';
@@ -1303,13 +1288,13 @@ function layoutCoverFlow() {
       x = cx - sz / 2; 
       rotY = 0; 
       scale = 1; 
-      zIndex = 100; // Center is always top in standard flow
+      zIndex = 100; 
     } else { 
       const spread = Math.min(absDiff, 5); 
       x = cx - sz / 2 + dir * (sz * 0.64 + (spread - 1) * (sz * 0.28)); 
       rotY = -dir * 68; 
       scale = Math.max(0.65, 1 - absDiff * 0.08); 
-      zIndex = 100 - absDiff; // Decreasing stacking
+      zIndex = 100 - absDiff; 
     }
     
     opacity = absDiff > 5 ? 0 : 1;
@@ -1323,19 +1308,15 @@ function layoutCoverFlow() {
     if(cover) { cover.style.width = sz + 'px'; cover.style.height = sz + 'px'; }
     if(reflect) { reflect.style.width = sz + 'px'; reflect.style.height = sz + 'px'; }
 
-    // FIX 2 (Landscape Sticking covers):
-    // When flip card is open, neighbors must not have translateZ(60px) in Landscape.
-    // Neighbors also get forced behind active (diff 0) in all orientations.
     let tz = 0;
     if (!isFlipCardOpen && diff === 0) tz = 60;
-    else if (isFlipCardOpen && diff !== 0) zIndex = 10; // Lower others drastically
+    else if (isFlipCardOpen && diff !== 0) zIndex = 10; 
 
     node.style.transform = `perspective(900px) rotateY(${rotY}deg) scale(${scale}) translateZ(${tz}px)`;
     node.style.zIndex = zIndex; 
     if(!node.style.opacity || parseFloat(node.style.opacity) !== 0.25) { node.style.opacity = opacity; }
   });
   
-  // Update Portal view backdrop if Portrait
   if(isPortrait) {
      const items = library.length > 0 ? library : [{title: 'Howdy!', artist: 'Add music to Music Library', _empty: true}];
      const item = items[Math.min(current, items.length - 1)];
@@ -1348,7 +1329,6 @@ function layoutCoverFlow() {
                 newPcc.appendChild(c);
                 pcc.parentNode.replaceChild(newPcc, pcc);
                 
-                // Pass newPcc specifically as the origin source for Portrait
                 newPcc.addEventListener('touchstart', (e) => startPressItem(e, item, newPcc), {passive: true});
                 newPcc.addEventListener('touchend', (e) => { 
                     cancelPressItem(); 
@@ -1364,9 +1344,15 @@ function layoutCoverFlow() {
   evaluateLabelText();
 }
 
-// Factorized Label Updater
 function evaluateLabelText() {
-  document.getElementById('cfLabel').style.top = Math.max(10, ( ( (cfStage.offsetHeight || window.innerHeight) - Math.min(Math.floor((cfStage.offsetHeight || window.innerHeight) * 0.52), 310) * 1.5) / 2) - 10 / 2) - 15) + 'px';
+  const W = cfStage.offsetWidth || window.innerWidth;
+  const H = cfStage.offsetHeight || window.innerHeight;
+  const isPortrait = window.innerHeight > window.innerWidth;
+  const sz = isPortrait ? Math.min(Math.floor(W * 0.75), 340) : Math.min(Math.floor(H * 0.52), 310);
+  const baseTop = Math.max(45, Math.floor((H - sz * 1.5) / 2) - 10);
+  const albumTop = baseTop + 15 - 10; 
+  
+  document.getElementById('cfLabel').style.top = Math.max(10, (albumTop / 2) - 15) + 'px';
   
   const items = library.length > 0 ? library : [{title: 'Howdy!', artist: 'Add music to Music Library', _empty: true}];
   const item = items[Math.min(current, items.length - 1)];
@@ -1387,7 +1373,7 @@ function evaluateLabelText() {
 }
 
 function setCurrent(i) { 
-  if (isFlipCardOpen) return; // FIX: Lock scroll interaction when flip active
+  if (isFlipCardOpen) return; 
   const max = Math.max(0, (library.length > 0 ? library.length : 1) - 1);
   current = Math.max(0, Math.min(max, i)); 
   layoutCoverFlow(); 
@@ -1573,7 +1559,7 @@ function getRandomTrack() {
 }
 
 async function playNextTrack() {
-  if (!currentlyPlayingId || isFlipCardOpen) return; // FIX: Block skip when flip active
+  if (!currentlyPlayingId || isFlipCardOpen) return; 
   
   if (isShuffle) {
      const nextT = getRandomTrack();
@@ -1604,7 +1590,7 @@ async function playNextTrack() {
 }
 
 async function playPrevTrack() {
-  if (!currentlyPlayingId || isFlipCardOpen) return; // FIX: Block skip when flip active
+  if (!currentlyPlayingId || isFlipCardOpen) return; 
 
   if (isShuffle) {
      const nextT = getRandomTrack();
